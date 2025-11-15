@@ -42,14 +42,14 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T010 Create base TypeScript types in src/lib/types/index.ts
-- [ ] T011 [P] Create Zod schemas for validation in src/lib/validators/schemas.ts
-- [ ] T012 [P] Setup IndexedDB storage service in src/lib/storage/db.ts
-- [ ] T013 Configure error handling infrastructure in src/lib/utils/errors.ts
-- [ ] T014 [P] Setup logging infrastructure (console + structured logging)
-- [ ] T015 Create base Svelte stores structure in src/lib/stores/
-- [ ] T016 Setup Tauri commands structure in src-tauri/src/commands.rs
-- [ ] T017 Create base layout component in src/routes/+layout.svelte
+- [X] T010 Create base TypeScript types in src/lib/types/index.ts
+- [X] T011 [P] Create Zod schemas for validation in src/lib/validators/schemas.ts
+- [X] T012 [P] Setup IndexedDB storage service in src/lib/storage/db.ts
+- [X] T013 Configure error handling infrastructure in src/lib/utils/errors.ts
+- [X] T014 [P] Setup logging infrastructure (console + structured logging)
+- [X] T015 Create base Svelte stores structure in src/lib/stores/
+- [X] T016 Setup Tauri commands structure in src-tauri/src/commands.rs
+- [X] T017 Create base layout component in src/routes/+layout.svelte
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -74,16 +74,16 @@
 
 ### Implementation for User Story 1
 
-- [ ] T024 [P] [US1] Create Investment model in src/lib/models/Investment.ts
-- [ ] T025 [P] [US1] Create PlatformConfig model in src/lib/models/PlatformConfig.ts
-- [ ] T026 [P] [US1] Create SimulationResult model in src/lib/models/SimulationResult.ts
-- [ ] T027 [P] [US1] Create UserSettings model in src/lib/models/UserSettings.ts
-- [ ] T028 [US1] Implement PlatformFees service in src/lib/services/PlatformFees.ts (depends on T025)
-- [ ] T029 [US1] Implement TaxCalculator service in src/lib/services/TaxCalculator.ts
-- [ ] T030 [US1] Implement SimulationEngine service in src/lib/services/SimulationEngine.ts (depends on T024, T028, T029)
-- [ ] T031 [US1] Add validation schemas with Zod in src/lib/validators/schemas.ts (depends on T024-T027)
-- [ ] T032 [US1] Add error handling and logging for all services
-- [ ] T033 [US1] Document all financial formulas with sources in code comments
+- [X] T024 [P] [US1] Create Investment model in src/lib/models/Investment.ts
+- [X] T025 [P] [US1] Create PlatformConfig model in src/lib/models/PlatformConfig.ts (dans types/index.ts)
+- [X] T026 [P] [US1] Create SimulationResult model in src/lib/models/SimulationResult.ts (dans types/index.ts)
+- [X] T027 [P] [US1] Create UserSettings model in src/lib/models/UserSettings.ts (dans types/index.ts)
+- [X] T028 [US1] Implement PlatformFees service in src/lib/services/PlatformFees.ts
+- [X] T029 [US1] Implement TaxCalculator service in src/lib/services/TaxCalculator.ts
+- [X] T030 [US1] Implement SimulationEngine service in src/lib/services/SimulationEngine.ts
+- [X] T031 [US1] Add validation schemas with Zod in src/lib/validators/schemas.ts
+- [X] T032 [US1] Add error handling and logging for all services
+- [X] T033 [US1] Document all financial formulas with sources in code comments
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently. All tests should pass with 90%+ coverage.
 
@@ -103,14 +103,14 @@
 
 ### Implementation for User Story 2
 
-- [ ] T037 [P] [US2] Create ExcelCell component in src/lib/components/ExcelCell.svelte
-- [ ] T038 [US2] Create SimulationSheet component in src/lib/components/SimulationSheet.svelte (depends on T037)
-- [ ] T039 [US2] Create simulation store in src/lib/stores/simulation.ts (depends on T030)
-- [ ] T040 [US2] Create settings store in src/lib/stores/settings.ts (depends on T027)
-- [ ] T041 [US2] Implement main page in src/routes/+page.svelte (depends on T038, T039, T040)
-- [ ] T042 [US2] Add real-time validation for user inputs
-- [ ] T043 [US2] Add visual feedback for invalid inputs
-- [ ] T044 [US2] Style interface to resemble Excel with grid layout
+- [X] T037 [P] [US2] Create ExcelCell component in src/lib/components/ExcelCell.svelte
+- [X] T038 [US2] Create SimulationSheet component in src/lib/components/SimulationSheet.svelte
+- [X] T039 [US2] Create simulation store in src/lib/stores/simulation.ts
+- [X] T040 [US2] Create settings store in src/lib/stores/settings.ts
+- [X] T041 [US2] Implement main page in src/routes/+page.svelte
+- [X] T042 [US2] Add real-time validation for user inputs
+- [X] T043 [US2] Add visual feedback for invalid inputs
+- [X] T044 [US2] Style interface to resemble Excel with grid layout
 
 **Checkpoint**: At this point, User Story 2 should be fully functional. Users can input parameters and see them reflected in the UI.
 
@@ -130,13 +130,13 @@
 
 ### Implementation for User Story 3
 
-- [ ] T048 [US3] Integrate SimulationEngine with UI in SimulationSheet component (depends on T030, T038)
-- [ ] T049 [P] [US3] Create ResultCard component in src/lib/components/ResultCard.svelte
-- [ ] T050 [US3] Implement multi-period calculation trigger in simulation store (depends on T039, T030)
-- [ ] T051 [US3] Display results for all periods (daily, weekly, monthly, yearly) in +page.svelte
-- [ ] T052 [US3] Add formatting for currency and percentages (€, %)
-- [ ] T053 [US3] Add visual indicators for positive/negative gains
-- [ ] T054 [US3] Verify consistency between periods (e.g., yearly = 12x monthly)
+- [X] T048 [US3] Integrate SimulationEngine with UI in SimulationSheet component
+- [X] T049 [P] [US3] Create ResultCard component in src/lib/components/ResultCard.svelte
+- [X] T050 [US3] Implement multi-period calculation trigger in simulation store
+- [X] T051 [US3] Display results for all periods (daily, weekly, monthly, yearly) in SimulationSheet
+- [X] T052 [US3] Add formatting for currency and percentages (€, %)
+- [X] T053 [US3] Add visual indicators for positive/negative gains
+- [X] T054 [US3] Verify consistency between periods (e.g., yearly = 12x monthly)
 
 **Checkpoint**: At this point, User Stories 1, 2, AND 3 should all work together. Users can input parameters, see calculations, and view results for all periods.
 
