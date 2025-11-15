@@ -1,0 +1,16 @@
+appId: com.simulateur.placement
+productName: Simulateur de Placement
+directories:
+  buildResources: build
+files:
+  - dist/**
+  - electron/**
+  - package.json
+win:
+  target:
+    - nsis
+  icon: assets/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
