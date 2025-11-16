@@ -9,12 +9,18 @@ const config = {
 		adapter: adapter({
 			pages: 'build',
 			assets: 'build',
-			fallback: undefined,
+			fallback: 'index.html', // Nécessaire pour la PWA (SPA)
 			precompress: false,
 			strict: true
 		}),
+		paths: {
+			base: process.env.NODE_ENV === 'production' ? '/simulateur_investissement' : ''
+		},
 		alias: {
 			'@': './src/lib'
+		},
+		serviceWorker: {
+			register: false // On gère manuellement le service worker
 		}
 	}
 };
