@@ -1,12 +1,12 @@
 # Feature Specification: Simulateur de Placement
 
-**Branch**: `simulateur-placement` | **Date**: 2025-11-16 | **Version**: 2.0.0
+**Branch**: `simulateur-placement` | **Date**: 2025-11-16 | **Version**: 2.1.0
 
-**Input**: Application de simulation d'investissement avec calculs précis de rentabilité nette, supportant desktop (Tauri) et web (PWA)
+**Input**: Application de simulation d'investissement avec calculs précis de rentabilité nette, supportant desktop (Tauri) et web (PWA), déployée sur GitHub Pages avec domaine personnalisé
 
 ## Overview
 
-Application complète de simulation d'investissement permettant de calculer précisément la rentabilité nette d'un investissement en prenant en compte tous les frais (spreads, commissions, swap overnight, frais de sortie/réachat, frais de retrait) et impôts selon la réglementation française. L'application est disponible en tant qu'application desktop (Tauri) et Progressive Web App (PWA) installable sur PC et smartphones.
+Application complète de simulation d'investissement permettant de calculer précisément la rentabilité nette d'un investissement en prenant en compte tous les frais (spreads, commissions, swap overnight, frais de sortie/réachat, frais de retrait) et impôts selon la réglementation française. L'application est disponible en tant qu'application desktop (Tauri) et Progressive Web App (PWA) installable sur PC et smartphones, déployée sur GitHub Pages avec domaine personnalisé `simulateur-etoro.iaproject.fr`.
 
 ## Context
 
@@ -18,11 +18,15 @@ Les investisseurs ont besoin d'un outil pour simuler précisément la rentabilit
 
 Application légère et réactive offrant :
 - Calculs financiers précis avec prise en compte de tous les frais et impôts
-- Interface type Excel avec cellules modifiables et mise à jour en temps réel
-- Visualisations graphiques interactives avec Chart.js
-- Support multi-plateformes (XTB, eToro)
-- Mode hors ligne complet (PWA)
+- Interface type Excel compacte avec cellules modifiables et mise à jour en temps réel
+- Visualisations graphiques interactives avec Chart.js (couleurs adaptées au thème clair/sombre)
+- Recherche d'actifs/ETF avec données historiques réelles
+- Support multi-plateformes (XTB, eToro) avec comparaison automatique
+- Mode hors ligne complet (PWA) avec service worker
 - Installation native sur desktop et mobile
+- Déploiement automatique sur GitHub Pages avec domaine personnalisé
+- Thème clair/sombre avec détection automatique des préférences système
+- Export CSV des résultats de simulation
 
 ## User Scenarios & Testing
 
@@ -82,7 +86,7 @@ Application légère et réactive offrant :
 **Objectif**: Installer l'application sur smartphone pour usage hors ligne
 **Prérequis**: Navigateur mobile (Chrome/Edge sur Android, Safari sur iOS)
 **Étapes**:
-1. Ouvrir l'application dans le navigateur mobile
+1. Ouvrir l'application dans le navigateur mobile (https://simulateur-etoro.iaproject.fr/)
 2. Suivre les instructions d'installation PWA
 3. Lancer l'application depuis l'écran d'accueil
 4. Utiliser l'application en mode hors ligne
@@ -92,6 +96,40 @@ Application légère et réactive offrant :
 **Tests**:
 - E2E: Tester l'installation PWA sur différents appareils
 - Integration: Vérifier le fonctionnement hors ligne avec cache
+
+### Scenario 5: Recherche et Visualisation d'Actifs
+**Acteur**: Investisseur recherchant un actif spécifique
+**Objectif**: Trouver et visualiser les données historiques d'un actif/ETF
+**Prérequis**: Connexion internet pour la recherche
+**Étapes**:
+1. Ouvrir l'application
+2. Utiliser le champ de recherche d'actifs/ETF
+3. Rechercher par nom complet ou ticker (ex: "iShares USD Treasury Bond" ou "IBC1")
+4. Sélectionner l'actif dans les résultats
+5. Consulter les informations (ticker, ISIN)
+6. Visualiser le graphique de rendement historique mis à jour automatiquement
+
+**Résultat attendu**: Actif trouvé et sélectionné, graphique historique mis à jour avec données réelles
+
+**Tests**:
+- Integration: Tester la recherche d'actifs avec différents termes
+- Unit: Vérifier la mise à jour automatique du graphique historique
+
+### Scenario 6: Export des Données
+**Acteur**: Investisseur souhaitant analyser les données
+**Objectif**: Exporter les résultats de simulation pour analyse externe
+**Prérequis**: Simulation complétée avec résultats affichés
+**Étapes**:
+1. Configurer et exécuter une simulation
+2. Consulter les résultats affichés
+3. Cliquer sur le bouton "📥 Exporter les données en CSV"
+4. Ouvrir le fichier CSV téléchargé dans Excel/LibreOffice
+
+**Résultat attendu**: Fichier CSV téléchargé avec toutes les métriques par période
+
+**Tests**:
+- Unit: Vérifier la génération CSV avec toutes les données
+- Integration: Tester l'export complet avec différentes configurations
 
 ## Functional Requirements
 
@@ -146,21 +184,34 @@ Application légère et réactive offrant :
 
 **Détails**:
 - Résultats pour période quotidienne, hebdomadaire, mensuelle, annuelle
-- Cartes de résultats par période avec métriques clés
-- Indicateurs financiers (ROI, Rentabilité Annualisée, Sharpe Ratio, Efficacité Fiscale, Ratio de Frais, Gain Mensuel Moyen)
-- Graphiques interactifs (évolution des gains, rentabilité par période)
-- Graphique de rendement historique avec données réelles d'actifs
+- Cartes de résultats par période avec métriques clés (interface compacte)
+- Indicateurs financiers avec modals explicatifs détaillés :
+  - ROI (Return on Investment) avec montant total incluant capital additionnel
+  - Rentabilité Annualisée avec projection sur 1 an
+  - Sharpe Ratio (ratio risque/rendement)
+  - Efficacité Fiscale (gain net / gain brut)
+  - Ratio de Frais (frais totaux / gain brut)
+  - Gain Mensuel Moyen
+- Graphiques interactifs avec dates réelles sur l'axe X :
+  - PerformanceChart : Évolution des gains bruts/nets et capital total
+  - ReturnChart : Rentabilité brute/nette par période avec moyenne
+  - HistoricalReturnsChart : Rendement historique avec données réelles d'actifs
+- Couleurs adaptées automatiquement au thème (clair/sombre) pour lisibilité optimale
+- Mise à jour en temps réel lors des modifications de paramètres
 
 **Critères de succès**:
 - Cohérence entre périodes (ex: annuel = 12x mensuel)
-- Affichage correct de toutes les métriques
-- Graphiques lisibles avec couleurs adaptées au thème
+- Affichage correct de toutes les métriques avec montants incluant capital additionnel
+- Graphiques lisibles avec couleurs contrastées adaptées au thème
+- Dates réelles affichées sur les axes X (pas de labels génériques)
 - Performance: rendu des graphiques < 100ms
+- Mise à jour automatique lors des changements de paramètres
 
 **Tests**:
 - Integration tests pour vérifier la cohérence multi-périodes
 - Unit tests pour les composants d'affichage
 - Visual regression tests pour les graphiques
+- Tests de réactivité pour les mises à jour en temps réel
 
 ### FR4: Gestion Stop Loss
 **Priorité**: P2
@@ -240,20 +291,27 @@ Application légère et réactive offrant :
 - Unit tests pour le service de recherche
 
 ### FR8: Progressive Web App (PWA)
-**Priorité**: P2
+**Priorité**: P2 ✅ IMPLÉMENTÉ
 **Description**: Application installable sur PC et smartphones avec mode hors ligne.
 
 **Détails**:
-- Manifest PWA avec métadonnées complètes
-- Service Worker pour cache offline
+- Manifest PWA avec métadonnées complètes (`static/manifest.json`)
+- Service Worker pour cache offline avec stratégies adaptatives :
+  - Cache First pour assets statiques (images, fonts, icônes)
+  - Network First pour données dynamiques (API, JSON)
+  - Stale While Revalidate pour pages HTML
 - Installation sur Android, iOS, Windows, macOS
-- Mode hors ligne fonctionnel
-- Mises à jour automatiques en arrière-plan
+- Mode hors ligne fonctionnel avec cache des pages visitées
+- Mises à jour automatiques en arrière-plan (vérification horaire)
+- Enregistrement automatique du service worker au démarrage
+- Icônes PWA complètes (72x72 à 512x512) avec logo SVG
+- Support des shortcuts et share target
 
 **Critères de succès**:
-- Installation réussie sur tous les plateformes supportées
-- Fonctionnement hors ligne avec cache
-- Mises à jour transparentes
+- Installation réussie sur tous les plateformes supportées ✅
+- Fonctionnement hors ligne avec cache ✅
+- Mises à jour transparentes ✅
+- Service Worker fonctionnel avec stratégies de cache appropriées ✅
 
 **Tests**:
 - E2E tests pour l'installation PWA
@@ -261,40 +319,98 @@ Application légère et réactive offrant :
 - Tests de cache offline
 
 ### FR9: Thème Clair/Sombre
-**Priorité**: P2
+**Priorité**: P2 ✅ IMPLÉMENTÉ
 **Description**: Support du mode clair et sombre avec détection automatique.
 
 **Détails**:
-- Toggle manuel du thème
-- Détection automatique des préférences système
-- Persistance du choix utilisateur
-- Adaptation des couleurs des graphiques au thème
+- Toggle manuel du thème avec bouton dans le layout
+- Détection automatique des préférences système (media query `prefers-color-scheme`)
+- Persistance du choix utilisateur dans IndexedDB
+- Adaptation automatique des couleurs des graphiques au thème :
+  - Textes : blanc (#f5f5f5) en mode sombre, bleu foncé (#1a1a2e) en mode clair
+  - Grilles : opacité adaptée selon le thème
+  - Tooltips : fond adapté avec bordure dorée
+  - Légendes et titres : couleurs adaptées
+- Design luxueux avec dégradés bleu foncé et accents dorés (#d4af37)
+- Texture élégante avec gradients radiaux subtils
 
 **Critères de succès**:
-- Basculement fluide entre thèmes
-- Couleurs adaptées pour lisibilité optimale
-- Préférence sauvegardée
+- Basculement fluide entre thèmes ✅
+- Couleurs adaptées pour lisibilité optimale ✅
+- Préférence sauvegardée ✅
+- Graphiques lisibles dans les deux thèmes ✅
 
 **Tests**:
 - Unit tests pour le store de thème
 - Visual tests pour les deux thèmes
+- Tests de persistance des préférences
 
 ### FR10: Export des Données
-**Priorité**: P3
+**Priorité**: P3 ✅ IMPLÉMENTÉ
 **Description**: Export des résultats de simulation en CSV.
 
 **Détails**:
 - Export des données de simulation en format CSV
-- Inclusion de toutes les métriques par période
+- Inclusion de toutes les métriques par période (quotidien, hebdomadaire, mensuel, annuel)
 - Format compatible Excel/LibreOffice
+- Bouton d'export accessible depuis l'en-tête des résultats
+- Génération côté client (pas de serveur requis)
 
 **Critères de succès**:
-- Export fonctionnel avec toutes les données
-- Format CSV valide et lisible
+- Export fonctionnel avec toutes les données ✅
+- Format CSV valide et lisible ✅
+- Téléchargement automatique du fichier ✅
 
 **Tests**:
 - Unit tests pour la génération CSV
 - Integration tests pour l'export complet
+
+### FR11: Déploiement GitHub Pages avec Domaine Personnalisé
+**Priorité**: P2 ✅ IMPLÉMENTÉ
+**Description**: Déploiement automatique sur GitHub Pages avec domaine personnalisé.
+
+**Détails**:
+- Workflow GitHub Actions pour build et déploiement automatique
+- Déploiement déclenché à chaque push sur `main`
+- Domaine personnalisé : `simulateur-etoro.iaproject.fr`
+- Configuration DNS CNAME dans OVH pointant vers `bigmoletos.github.io`
+- HTTPS automatique activé (Enforce HTTPS)
+- Base path configuré pour domaine personnalisé (pas de sous-chemin)
+
+**Critères de succès**:
+- Déploiement automatique fonctionnel ✅
+- Domaine personnalisé accessible ✅
+- HTTPS activé et fonctionnel ✅
+- Toutes les ressources chargées correctement depuis la racine ✅
+
+**Tests**:
+- Vérification du workflow GitHub Actions
+- Tests de déploiement sur domaine personnalisé
+- Vérification DNS et HTTPS
+
+### FR12: Interface Compacte et Optimisée
+**Priorité**: P2 ✅ IMPLÉMENTÉ
+**Description**: Interface optimisée pour afficher un maximum d'informations sans scroll.
+
+**Détails**:
+- Cards et sections compactes avec padding et marges réduits
+- Layout multi-colonnes pour meilleure utilisation de l'espace
+- Font sizes optimisés pour densité d'information
+- Réorganisation des sections :
+  - Comparaison des plateformes placée juste après les résultats
+  - Détail des calculs et Sources officielles sur la même ligne
+  - Explication des frais et Résumé des frais sur la même ligne
+- Export CSV intégré dans l'en-tête des résultats
+- Champs de recherche d'actifs optimisés pour affichage complet des noms
+
+**Critères de succès**:
+- Maximum d'informations visibles sans scroll ✅
+- Interface compacte mais lisible ✅
+- Organisation logique des sections ✅
+
+**Tests**:
+- Visual tests pour la compacité
+- Tests de responsive design
 
 ## Non-Functional Requirements
 
@@ -326,6 +442,8 @@ Application légère et réactive offrant :
 - **Desktop**: Windows, Linux, macOS (via Tauri)
 - **Web**: PWA installable sur tous navigateurs modernes
 - **Mobile**: Android, iOS (via PWA)
+- **Déploiement**: GitHub Pages avec domaine personnalisé (simulateur-etoro.iaproject.fr)
+- **HTTPS**: Certificat SSL automatique via GitHub Pages
 
 ## Key Entities
 
@@ -373,24 +491,30 @@ static/                    # Assets statiques
 ├── manifest.json         # Manifest PWA
 ├── service-worker.js     # Service Worker pour cache offline
 └── icons/                # Icônes PWA (72x72 à 512x512)
+    ├── logo.svg         # Logo SVG de l'application
+    └── .gitkeep         # Placeholder pour icônes générées
+
+.github/workflows/        # GitHub Actions
+└── deploy.yml           # Workflow de déploiement GitHub Pages
 ```
 
 ### Composants Principaux
 
-1. **SimulationSheet**: Interface principale avec paramètres et résultats
-2. **ExcelCell**: Composant cellule modifiable type Excel
-3. **FinancialIndicators**: Affichage des indicateurs financiers avec modals explicatifs
-4. **PerformanceChart**: Graphique d'évolution des gains et capital total
-5. **ReturnChart**: Graphique de rentabilité par période
-6. **HistoricalReturnsChart**: Graphique de rendement historique avec données réelles
-7. **ResultCard**: Carte de résultats par période
-8. **OptimizationPanel**: Panneau de recommandations d'optimisation
-9. **PlatformComparison**: Comparaison avec configuration actuelle
-10. **CalculationDetails**: Détail des calculs étape par étape
-11. **FeesExplanation**: Explication des frais par plateforme
-12. **SourcesPanel**: Sources officielles des données
-13. **AssetSearch**: Recherche d'actifs/ETF
-14. **FrequencyMultiSelector**: Sélecteur de fréquence avec option "aucun"
+1. **SimulationSheet**: Interface principale compacte avec paramètres et résultats, layout multi-colonnes
+2. **ExcelCell**: Composant cellule modifiable type Excel avec validation en temps réel
+3. **FinancialIndicators**: Affichage des indicateurs financiers avec modals explicatifs détaillés (formules, interprétations)
+4. **PerformanceChart**: Graphique d'évolution des gains bruts/nets et capital total avec dates réelles
+5. **ReturnChart**: Graphique de rentabilité brute/nette par période avec moyenne, dates réelles sur axe X
+6. **HistoricalReturnsChart**: Graphique de rendement historique avec données réelles d'actifs, moyenne mobile
+7. **ResultCard**: Carte de résultats par période (interface compacte)
+8. **OptimizationPanel**: Panneau de recommandations d'optimisation avec comparaison avant/après
+9. **PlatformComparison**: Comparaison avec configuration actuelle, placée juste après les résultats
+10. **CalculationDetails**: Détail des calculs étape par étape avec décomposition complète des frais
+11. **FeesExplanation**: Explication des frais par plateforme avec sections pliables, affichage côte à côte avec résumé
+12. **SourcesPanel**: Sources officielles des données avec sections pliables, affichage côte à côte avec détails
+13. **AssetSearch**: Recherche d'actifs/ETF avec autocomplétion, recherche par nom ou ticker, affichage optimisé
+14. **FrequencyMultiSelector**: Sélecteur de fréquence avec radio buttons et option "aucun" qui annule les autres sélections
+15. **ReinvestFrequencySelector**: Sélecteur de fréquence de réinvestissement (composant alternatif)
 
 ### Services Principaux
 
@@ -433,22 +557,40 @@ static/                    # Assets statiques
 4. **Trading réel**: Pas d'intégration avec plateformes de trading
 5. **Notifications push**: Pas de notifications (PWA basique)
 
+## Évolutions Récentes (v2.1.0)
+
+### ✅ Implémenté
+- **PWA complète** : Manifest, Service Worker, installation sur tous plateformes
+- **Déploiement GitHub Pages** : Workflow automatique avec domaine personnalisé
+- **Recherche d'actifs** : Intégration avec données historiques réelles
+- **Graphiques améliorés** : Dates réelles, couleurs adaptées au thème, lisibilité optimale
+- **Interface compacte** : Optimisation de l'espace, layout multi-colonnes
+- **Thème clair/sombre** : Détection automatique, persistance, adaptation graphiques
+- **Export CSV** : Export complet des résultats de simulation
+- **Comparaison plateformes** : Comparaison automatique avec configuration actuelle
+- **Détails calculs** : Décomposition étape par étape avec toutes les formules
+- **Explications frais** : Documentation complète des frais par plateforme
+- **Design luxueux** : Dégradés bleu foncé, accents dorés, texture élégante
+
 ## Evolution Future
 
 ### Court Terme
 - Ajout de nouvelles plateformes (Interactive Brokers, Degiro, etc.)
 - Export PDF des résultats
 - Comparaison de plusieurs simulations
+- Génération automatique des icônes PWA à partir du logo SVG
 
 ### Moyen Terme
 - API REST pour utilisation en ligne de commande
 - Synchronisation cloud optionnelle
 - Application mobile native (React Native/Flutter)
+- Amélioration du cache offline (plus de données mises en cache)
 
 ### Long Terme
 - Intégration avec plateformes de trading (API)
 - Analyse de portefeuille multi-actifs
 - Recommandations basées sur IA/ML
+- Notifications push pour mises à jour importantes
 
 ## Dependencies
 
@@ -478,11 +620,34 @@ static/                    # Assets statiques
 4. **Risque**: Compatibilité navigateurs
    - **Mitigation**: Tests sur navigateurs cibles, fallbacks si nécessaire
 
+## Déploiement et Infrastructure
+
+### GitHub Pages
+- **URL de production** : https://simulateur-etoro.iaproject.fr/
+- **Domaine personnalisé** : `simulateur-etoro.iaproject.fr` (CNAME vers `bigmoletos.github.io`)
+- **HTTPS** : Activé automatiquement (Enforce HTTPS)
+- **Déploiement** : Automatique via GitHub Actions à chaque push sur `main`
+- **Base path** : Aucun (domaine personnalisé à la racine)
+
+### Configuration DNS (OVH)
+- **Type** : CNAME
+- **Sous-domaine** : `simulateur-etoro`
+- **Cible** : `bigmoletos.github.io`
+- **TTL** : 3600
+
+### Workflow GitHub Actions
+- Build automatique avec Node.js 20
+- Cache npm pour performances
+- Déploiement automatique sur GitHub Pages
+- Vérification DNS et activation HTTPS automatique
+
 ## References
 
 - [SvelteKit Documentation](https://kit.svelte.dev/)
 - [Tauri Documentation](https://tauri.app/)
 - [Chart.js Documentation](https://www.chartjs.org/)
 - [PWA Documentation](https://web.dev/progressive-web-apps/)
+- [GitHub Pages Documentation](https://docs.github.com/en/pages)
 - [Réglementation fiscale française](https://www.impots.gouv.fr/)
+- [OVH DNS Documentation](https://docs.ovh.com/fr/domaines/)
 
