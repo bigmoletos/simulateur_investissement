@@ -118,7 +118,7 @@
 
 	.card-header {
 		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-		background-image: 
+		background-image:
 			radial-gradient(circle at 30% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 60%);
 		color: #f5f5f5;
 		padding: 0.5rem;
