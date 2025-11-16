@@ -1,0 +1,3 @@
+# Ce dossier contiendra les icônes PWA
+# Générer les icônes avec: node scripts/generate-icons.js [chemin-image-source.png]
+

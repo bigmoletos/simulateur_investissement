@@ -26,6 +26,41 @@
 		await settings.load();
 		// Initialiser le thème après le chargement des settings
 		theme.init();
+
+		// Enregistrer le service worker pour la PWA
+		if (browser && 'serviceWorker' in navigator) {
+			try {
+				const registration = await navigator.serviceWorker.register('/service-worker.js', {
+					scope: '/'
+				});
+				console.log('[PWA] Service Worker enregistré avec succès:', registration.scope);
+
+				// Vérifier les mises à jour périodiquement
+				registration.addEventListener('updatefound', () => {
+					const newWorker = registration.installing;
+					if (newWorker) {
+						newWorker.addEventListener('statechange', () => {
+							if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+								// Nouvelle version disponible
+								console.log('[PWA] Nouvelle version disponible');
+								// Optionnel : afficher une notification à l'utilisateur
+								if (confirm('Une nouvelle version est disponible. Voulez-vous recharger la page ?')) {
+									newWorker.postMessage({ type: 'SKIP_WAITING' });
+									window.location.reload();
+								}
+							}
+						});
+					}
+				});
+
+				// Vérifier les mises à jour toutes les heures
+				setInterval(() => {
+					registration.update();
+				}, 60 * 60 * 1000);
+			} catch (error) {
+				console.error('[PWA] Erreur lors de l\'enregistrement du Service Worker:', error);
+			}
+		}
 	});
 </script>
 
