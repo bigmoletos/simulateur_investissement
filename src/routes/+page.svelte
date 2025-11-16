@@ -14,15 +14,23 @@
 <style>
 	main {
 		min-height: 100vh;
-		background: #f5f5f5;
+		background: var(--bg-secondary, #f5f5f5);
+	}
+
+	:global(:root.dark) main {
+		background: var(--bg-secondary);
 	}
 
 	.app-header {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
+		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+		background-image: 
+			radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.08) 0%, transparent 50%),
+			radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+		color: #f5f5f5;
 		padding: 2rem;
 		text-align: center;
-		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+		border-bottom: 1px solid rgba(255, 215, 0, 0.2);
 	}
 
 	.app-header h1 {

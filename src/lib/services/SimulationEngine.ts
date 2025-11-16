@@ -49,13 +49,90 @@ export class SimulationEngine {
 		// Montant exposé au marché (pour info) = investment.amount * investment.leverage
 		const leveragedAmount = investment.amount * investment.leverage; // Montant exposé au marché (pour info)
 
-		// Gain brut avant frais et impôts
-		// Le levier multiplie uniquement le gain, pas le montant investi
-		const grossGain = investment.amount * periodReturn * investment.leverage;
+		// ============================================
+		// CALCUL DES GAINS SUR LE CAPITAL INITIAL UNIQUEMENT
+		// ============================================
+		// IMPORTANT: La rentabilité (ROI) est calculée UNIQUEMENT sur le capital initial
+		// Le capital additionnel génère des gains mais n'affecte PAS le calcul de rentabilité
 
-		// Calcul des frais de transaction (entrée)
-		// Note: monthlyVolume = 0 par défaut (on ne suit pas le volume mensuel pour l'instant)
-		const entryFees = PlatformFees.calculate(
+		// Gain brut sur le capital initial uniquement (sans capital additionnel)
+		const initialGrossGain = investment.amount * periodReturn * investment.leverage;
+
+		// ============================================
+		// CALCUL DU CAPITAL ADDITIONNEL (si applicable)
+		// ============================================
+		// Support de l'ancien système (monthlyCapitalAddition) et du nouveau (capitalAdditionAmount + capitalAdditionFrequency)
+		const capitalAdditionAmount = investment.capitalAdditionAmount || investment.monthlyCapitalAddition || 0;
+		const capitalAdditionFrequency = investment.capitalAdditionFrequency || (investment.monthlyCapitalAddition ? 'monthly' : undefined);
+
+		let additionalCapitalAmount = 0;
+		let additionalCapitalGain = 0;
+
+		// Calculer le capital additionnel et ses gains selon la période et la fréquence
+		if (capitalAdditionAmount > 0 && capitalAdditionFrequency) {
+			if (period === 'yearly') {
+				if (capitalAdditionFrequency === 'yearly') {
+					// Ajout annuel : tout le capital est investi au début de l'année
+					additionalCapitalAmount = capitalAdditionAmount;
+					additionalCapitalGain = capitalAdditionAmount * periodReturn * investment.leverage;
+				} else if (capitalAdditionFrequency === 'monthly') {
+					// Ajout mensuel : 12 ajouts sur l'année
+					const totalMonthlyAdditions = capitalAdditionAmount * 12;
+					// Capital moyen additionnel investi sur l'année (approximation)
+					const averageAdditionalCapital = totalMonthlyAdditions / 2;
+					additionalCapitalAmount = totalMonthlyAdditions;
+					additionalCapitalGain = averageAdditionalCapital * periodReturn * investment.leverage;
+				} else if (capitalAdditionFrequency === 'weekly') {
+					// Ajout hebdomadaire : ~52 ajouts sur l'année
+					const totalWeeklyAdditions = capitalAdditionAmount * 52;
+					const averageAdditionalCapital = totalWeeklyAdditions / 2;
+					additionalCapitalAmount = totalWeeklyAdditions;
+					additionalCapitalGain = averageAdditionalCapital * periodReturn * investment.leverage;
+				} else if (capitalAdditionFrequency === 'daily') {
+					// Ajout quotidien : 365 ajouts sur l'année
+					const totalDailyAdditions = capitalAdditionAmount * 365;
+					const averageAdditionalCapital = totalDailyAdditions / 2;
+					additionalCapitalAmount = totalDailyAdditions;
+					additionalCapitalGain = averageAdditionalCapital * periodReturn * investment.leverage;
+				}
+			} else if (period === 'monthly') {
+				if (capitalAdditionFrequency === 'monthly') {
+					additionalCapitalAmount = capitalAdditionAmount;
+					additionalCapitalGain = capitalAdditionAmount * periodReturn * investment.leverage;
+				} else if (capitalAdditionFrequency === 'weekly') {
+					// ~4 ajouts hebdomadaires par mois
+					additionalCapitalAmount = capitalAdditionAmount * 4;
+					additionalCapitalGain = additionalCapitalAmount * periodReturn * investment.leverage;
+				} else if (capitalAdditionFrequency === 'daily') {
+					// ~30 ajouts quotidiens par mois
+					additionalCapitalAmount = capitalAdditionAmount * 30;
+					additionalCapitalGain = additionalCapitalAmount * periodReturn * investment.leverage;
+				}
+			} else if (period === 'weekly') {
+				if (capitalAdditionFrequency === 'weekly') {
+					additionalCapitalAmount = capitalAdditionAmount;
+					additionalCapitalGain = capitalAdditionAmount * periodReturn * investment.leverage;
+				} else if (capitalAdditionFrequency === 'daily') {
+					// ~7 ajouts quotidiens par semaine
+					additionalCapitalAmount = capitalAdditionAmount * 7;
+					additionalCapitalGain = additionalCapitalAmount * periodReturn * investment.leverage;
+				}
+			} else if (period === 'daily') {
+				if (capitalAdditionFrequency === 'daily') {
+					additionalCapitalAmount = capitalAdditionAmount;
+					additionalCapitalGain = capitalAdditionAmount * periodReturn * investment.leverage;
+				}
+			}
+		}
+
+		// Gain brut total (capital initial + capital additionnel) - pour information uniquement
+		const grossGain = initialGrossGain + additionalCapitalGain;
+
+		// ============================================
+		// CALCUL DES FRAIS SUR LE CAPITAL INITIAL
+		// ============================================
+		// Calcul des frais de transaction (entrée) sur le capital initial uniquement
+		const initialEntryFees = PlatformFees.calculate(
 			investment.platform,
 			investment.amount,
 			investment.assetType,
@@ -63,9 +140,8 @@ export class SimulationEngine {
 			0 // monthlyVolume - à implémenter si nécessaire
 		);
 
-		// Calcul des frais récurrents (swap overnight si levier > 1)
-		// Les frais de swap sont calculés sur le montant exposé au marché
-		const swapFees = this.calculateSwapFees(
+		// Calcul des frais récurrents (swap overnight si levier > 1) sur le capital initial
+		const initialSwapFees = this.calculateSwapFees(
 			investment.amount, // Montant investi réel
 			investment.leverage,
 			daysInPeriod,
@@ -73,14 +149,18 @@ export class SimulationEngine {
 			investment.assetType
 		);
 
-		// Calcul des frais de sortie si on vend pour réinvestir
-		// Si la fréquence de réinvestissement correspond à la période, on vend et rachète
-		const shouldSellAndReinvest = this.shouldReinvest(investment, period);
-		let exitFees = 0;
-		if (shouldSellAndReinvest) {
-			// Frais de sortie = spread à la vente (même taux qu'à l'entrée)
-			// Le montant vendu = montant investi initial + gain brut
-			const sellAmount = investment.amount + grossGain;
+		// ============================================
+		// CALCUL DES FRAIS DE SORTIE/RÉACHAT (stabilisation)
+		// ============================================
+		// Vérifier si on doit vendre/réacheter selon sellFrequency (pour stabiliser les gains)
+		const shouldSellForStabilization = this.shouldSellForStabilization(investment, period);
+		const sellStrategy = investment.sellStrategy || 'reinvest'; // Par défaut: réinvestir
+		let initialExitFees = 0;
+		let initialReentryFees = 0;
+
+		if (shouldSellForStabilization) {
+			// Frais de sortie = spread à la vente sur le capital initial + gain initial
+			const sellAmount = investment.amount + initialGrossGain;
 			const exitFeeBreakdown = PlatformFees.calculate(
 				investment.platform,
 				sellAmount,
@@ -88,79 +168,219 @@ export class SimulationEngine {
 				investment.leverage,
 				0
 			);
-			exitFees = exitFeeBreakdown.spread || exitFeeBreakdown.entry;
-			
-			// Frais d'entrée supplémentaires pour le rachat après vente
-			// Le nouveau capital = montant initial + gain net après frais de sortie
-			const newCapitalAfterSale = investment.amount + grossGain - swapFees - exitFees;
-			const reentryFees = PlatformFees.calculate(
+			initialExitFees = exitFeeBreakdown.spread || exitFeeBreakdown.entry;
+
+			// Frais d'entrée supplémentaires pour le rachat après vente (si stratégie = réinvestir)
+			if (sellStrategy === 'reinvest') {
+				// Capital disponible après vente = capital initial + gain brut - frais d'entrée initiaux - frais de swap - frais de sortie
+				// Note: Les frais d'entrée initiaux sont déjà payés au début, donc on les déduit du capital disponible
+				const newCapitalAfterSale = investment.amount + initialGrossGain - initialEntryFees.total - initialSwapFees - initialExitFees;
+				const reentryFeeBreakdown = PlatformFees.calculate(
+					investment.platform,
+					newCapitalAfterSale,
+					investment.assetType,
+					investment.leverage,
+					0
+				);
+				initialReentryFees = reentryFeeBreakdown.entry;
+			}
+		}
+
+		// ============================================
+		// CALCUL DES FRAIS DE RÉINVESTISSEMENT
+		// ============================================
+		// Vérifier si on doit réinvestir les gains selon reinvestFrequency
+		const shouldReinvest = this.shouldReinvestGains(investment, period);
+		// Note: Le réinvestissement simple (garder les gains dans la position) ne génère pas de frais supplémentaires
+		// Les frais de réinvestissement ne s'appliquent que si on vend/réachète (déjà géré par shouldSellForStabilization)
+		let reinvestmentEntryFees = 0;
+
+		// ============================================
+		// CALCUL DES FRAIS DE RETRAIT (précalcul pour déterminer le gain net)
+		// ============================================
+		// Précalculer les frais de retrait si on retire (sera recalculé après impôts)
+		// sellStrategy et shouldSellForStabilization sont déjà déclarés plus haut
+		let preliminaryWithdrawalFees = 0;
+
+		if (shouldSellForStabilization && sellStrategy === 'withdraw') {
+			// Estimation des frais de retrait sur le gain net estimé (sera ajusté après impôts)
+			const estimatedNetGain = initialGrossGain - initialEntryFees.total - initialExitFees - initialReentryFees - initialSwapFees;
+			const estimatedTaxes = TaxCalculator.calculate(estimatedNetGain, annualIncome);
+			const estimatedWithdrawalAmount = estimatedNetGain - estimatedTaxes.total;
+			if (estimatedWithdrawalAmount > 0) {
+				const platformFees = PlatformFees.calculate(
+					investment.platform,
+					estimatedWithdrawalAmount,
+					investment.assetType,
+					investment.leverage,
+					0
+				);
+				preliminaryWithdrawalFees = platformFees.withdrawalFee || 0;
+			}
+		}
+
+		// ============================================
+		// CALCUL DES GAINS NETS SUR LE CAPITAL INITIAL
+		// ============================================
+		// Gain après frais sur le capital initial uniquement
+		// Inclure tous les frais : entrée, sortie/réachat, réinvestissement, swap, retrait
+		const initialGainAfterFees = initialGrossGain - initialEntryFees.total - initialExitFees - initialReentryFees - reinvestmentEntryFees - initialSwapFees - preliminaryWithdrawalFees;
+
+		// Impôts sur les gains du capital initial uniquement
+		const initialTaxes = TaxCalculator.calculate(initialGainAfterFees, annualIncome);
+
+		// Gain net sur le capital initial uniquement (pour calcul ROI)
+		const initialCapitalNetGain = initialGainAfterFees - initialTaxes.total;
+
+		// ============================================
+		// CALCUL DES FRAIS ET GAINS SUR LE CAPITAL ADDITIONNEL
+		// ============================================
+		let additionalCapitalFees = 0;
+		let additionalCapitalSwapFees = 0;
+		let additionalCapitalTaxes = { total: 0 } as import('../types/index.js').TaxBreakdown;
+		let additionalCapitalNetGain = 0;
+
+		if (additionalCapitalAmount > 0) {
+			// Frais d'entrée sur le capital additionnel
+			const additionEntryFees = PlatformFees.calculate(
 				investment.platform,
-				newCapitalAfterSale,
+				additionalCapitalAmount,
 				investment.assetType,
 				investment.leverage,
 				0
 			);
-			// Ajouter les frais d'entrée du rachat aux frais d'entrée initiaux
-			entryFees.entry += reentryFees.entry;
-			entryFees.total += reentryFees.entry;
-			entryFees.spread = (entryFees.spread || 0) + (reentryFees.spread || 0);
-			entryFees.commission = (entryFees.commission || 0) + (reentryFees.commission || 0);
+			additionalCapitalFees = additionEntryFees.total;
+
+			// Frais de swap sur le capital additionnel
+			additionalCapitalSwapFees = this.calculateSwapFees(
+				additionalCapitalAmount,
+				investment.leverage,
+				daysInPeriod,
+				investment.platform,
+				investment.assetType
+			);
+
+			// Gain après frais sur le capital additionnel
+			const additionGainAfterFees = additionalCapitalGain - additionalCapitalFees - additionalCapitalSwapFees;
+
+			// Impôts sur les gains du capital additionnel
+			additionalCapitalTaxes = TaxCalculator.calculate(additionGainAfterFees, annualIncome);
+
+			// Gain net sur le capital additionnel
+			additionalCapitalNetGain = additionGainAfterFees - additionalCapitalTaxes.total;
 		}
 
-		// Gain après frais de transaction (entrée, sortie si applicable, et swap)
-		const gainAfterFees = grossGain - entryFees.total - exitFees - swapFees;
-
-		// Calcul des impôts sur le gain
-		const taxes = TaxCalculator.calculate(gainAfterFees, annualIncome);
-
-		// Gain net final
-		const netGain = gainAfterFees - taxes.total;
-
-		// Calcul du stop loss
-		// Le stop loss s'applique sur le montant investi, mais la perte est multipliée par le levier
+		// ============================================
+		// CALCUL DU STOP LOSS ET TAKE PROFIT
+		// ============================================
 		const stopLossPercentage = investment.stopLoss / 100;
-		const stopLossAmount = investment.amount * stopLossPercentage; // Perte sur le montant investi
-		const potentialLoss = stopLossAmount * investment.leverage; // Perte réelle avec levier
+		const stopLossAmount = investment.amount * stopLossPercentage;
+		const potentialLoss = stopLossAmount * investment.leverage;
 
-		// Capital mensuel supplémentaire (si applicable et période mensuelle ou plus)
-		const monthlyAddition = investment.monthlyCapitalAddition || 0;
-		const capitalAddition = period === 'monthly' || period === 'yearly'
-			? monthlyAddition * (period === 'yearly' ? 12 : 1)
+		let takeProfitInfo: { percentage: number; amount: number; potentialGain: number } | undefined;
+		if (investment.takeProfit && investment.takeProfit > 0) {
+			const takeProfitPercentage = investment.takeProfit / 100;
+			const takeProfitAmount = investment.amount * takeProfitPercentage;
+			const potentialGain = takeProfitAmount * investment.leverage;
+			takeProfitInfo = {
+				percentage: investment.takeProfit,
+				amount: takeProfitAmount,
+				potentialGain
+			};
+		}
+
+		// ============================================
+		// CALCUL DES TOTAUX (pour information)
+		// ============================================
+		// Totaux combinés (capital initial + capital additionnel)
+		const totalFees = {
+			entry: initialEntryFees.total + initialReentryFees + reinvestmentEntryFees + additionalCapitalFees,
+			exit: initialExitFees,
+			swap: initialSwapFees + additionalCapitalSwapFees,
+			withdrawal: preliminaryWithdrawalFees,
+			total: initialEntryFees.total + initialExitFees + initialReentryFees + reinvestmentEntryFees + initialSwapFees + additionalCapitalFees + additionalCapitalSwapFees + preliminaryWithdrawalFees
+		};
+
+		const totalTaxes = {
+			socialCharges: initialTaxes.socialCharges + additionalCapitalTaxes.socialCharges,
+			incomeTax: initialTaxes.incomeTax + additionalCapitalTaxes.incomeTax,
+			total: initialTaxes.total + additionalCapitalTaxes.total,
+			taxRegime: initialTaxes.taxRegime || 'PFU'
+		};
+
+		const totalNetGain = initialCapitalNetGain + additionalCapitalNetGain;
+
+		// Nouveau capital total après réinvestissement et ajout de capital
+		// Si on vend/réachète, le nouveau capital = capital après vente - frais de réentrée
+		// Sinon, le nouveau capital = capital initial + gains nets
+		let newCapital: number;
+		if (shouldSellForStabilization && sellStrategy === 'reinvest') {
+			// Après vente/réachat : capital initial + gain brut - tous les frais (entrée, swap, sortie, réentrée) - impôts
+			newCapital = investment.amount + initialGrossGain - initialEntryFees.total - initialSwapFees - initialExitFees - initialReentryFees - initialTaxes.total + additionalCapitalAmount;
+		} else if (shouldSellForStabilization && sellStrategy === 'withdraw') {
+			// Si on retire, le capital reste au montant initial (les gains sont retirés moins les frais de retrait)
+			// Les frais de retrait sont déduits du montant retiré
+			newCapital = investment.amount + additionalCapitalAmount;
+		} else {
+			// Réinvestissement simple : capital initial + gains nets
+			newCapital = investment.amount + totalNetGain + additionalCapitalAmount;
+		}
+
+		// Réinvestissement ou retrait selon la stratégie
+		// Le réinvestissement = gain net conservé dans la position (pas de frais supplémentaires)
+		// Si on vend/réachète, les frais sont déjà déduits dans initialCapitalNetGain
+		// Les frais de retrait sont déjà déduits dans initialCapitalNetGain via preliminaryWithdrawalFees
+		const reinvestment = (shouldSellForStabilization && sellStrategy === 'reinvest') || (shouldReinvest && !shouldSellForStabilization)
+			? initialCapitalNetGain
+			: 0;
+		const withdrawal = shouldSellForStabilization && sellStrategy === 'withdraw'
+			? initialCapitalNetGain // Les frais de retrait sont déjà déduits dans initialCapitalNetGain
 			: 0;
 
-		// Nouveau capital après réinvestissement et ajout mensuel
-		const newCapital = investment.amount + netGain + capitalAddition;
-
-		// Réinvestissement selon la fréquence
-		const reinvestment = this.shouldReinvest(investment, period) ? netGain : 0;
+		// ============================================
+		// CALCUL DE LA RENTABILITÉ (ROI) - UNIQUEMENT SUR CAPITAL INITIAL
+		// ============================================
+		// IMPORTANT: La rentabilité est calculée UNIQUEMENT sur le capital initial
+		// Le capital additionnel génère des gains mais n'affecte PAS le ROI
+		const netReturn = investment.amount > 0 ? (initialCapitalNetGain / investment.amount) * 100 : 0;
 
 		const result: SimulationResult = {
 			investmentId: investment.id,
 			period,
 			daysInPeriod,
-			initialAmount: investment.amount,
+			initialAmount: investment.amount, // Capital initial uniquement
 			leveragedAmount,
-			grossGain,
-			fees: {
-				entry: entryFees.total,
-				exit: exitFees,
-				swap: swapFees,
-				total: entryFees.total + exitFees + swapFees
-			},
-			taxes,
-			netGain,
-			netReturn: investment.amount > 0 ? (netGain / investment.amount) * 100 : 0,
+			grossGain: grossGain, // Gain brut total (capital initial + capital additionnel) - pour information
+			// Gains séparés pour calcul de rentabilité précise
+			initialCapitalGain: initialGrossGain, // Gain brut sur capital initial uniquement
+			additionalCapitalGain: additionalCapitalAmount > 0 ? additionalCapitalGain : undefined,
+			additionalCapitalAmount: additionalCapitalAmount > 0 ? additionalCapitalAmount : undefined,
+			fees: totalFees,
+			taxes: totalTaxes,
+			netGain: totalNetGain, // Gain net total (capital initial + capital additionnel) - pour information
+			initialCapitalNetGain: initialCapitalNetGain, // Gain net sur capital initial uniquement (pour calcul ROI)
+			netReturn: netReturn, // Rentabilité nette calculée UNIQUEMENT sur le capital initial
 			newCapital,
 			reinvestment,
+			withdrawal: withdrawal > 0 ? withdrawal : undefined,
 			stopLoss: {
 				percentage: investment.stopLoss,
 				amount: stopLossAmount,
 				potentialLoss
 			},
+			takeProfit: takeProfitInfo,
 			calculatedAt: new Date()
 		};
 
-		logger.info('Simulation calculée', { investmentId: investment.id, period, netGain, netReturn: result.netReturn });
+		logger.info('Simulation calculée', {
+			investmentId: investment.id,
+			period,
+			netGain: totalNetGain,
+			initialCapitalNetGain: initialCapitalNetGain,
+			netReturn: result.netReturn,
+			additionalCapitalAmount,
+			additionalCapitalGain
+		});
 
 		return result;
 	}
@@ -180,6 +400,44 @@ export class SimulationEngine {
 		}
 
 		return results as Record<Period, SimulationResult>;
+	}
+
+	/**
+	 * Simule plusieurs périodes consécutives pour afficher l'évolution temporelle
+	 * @param investment Investissement initial
+	 * @param period Période à simuler (daily, weekly, monthly, yearly)
+	 * @param numberOfPeriods Nombre de périodes à simuler
+	 * @param annualIncome Revenu annuel pour le calcul des impôts
+	 * @returns Tableau de résultats pour chaque période
+	 */
+	static simulateConsecutivePeriods(
+		investment: Investment,
+		period: Period,
+		numberOfPeriods: number,
+		annualIncome: number = 0
+	): SimulationResult[] {
+		const results: SimulationResult[] = [];
+		let currentInvestment = investment.clone();
+		let cumulativeCapital = investment.amount;
+
+		for (let i = 0; i < numberOfPeriods; i++) {
+			// Simuler la période avec le capital actuel
+			const result = this.simulate(currentInvestment, period, annualIncome);
+			results.push(result);
+
+			// Mettre à jour le capital pour la prochaine période
+			// Le nouveau capital inclut les gains nets et le capital additionnel
+			cumulativeCapital = result.newCapital;
+
+			// Créer un nouvel investissement avec le capital mis à jour pour la période suivante
+			// On garde les mêmes paramètres mais on met à jour le montant initial
+			currentInvestment = new Investment({
+				...currentInvestment.toJSON(),
+				amount: cumulativeCapital
+			});
+		}
+
+		return results;
 	}
 
 	/**
@@ -214,10 +472,76 @@ export class SimulationEngine {
 	}
 
 	/**
-	 * Détermine si on doit réinvestir selon la fréquence
+	 * Détermine si on doit vendre/réacheter selon la fréquence de sortie pour stabiliser les gains
+	 * Utilise sellFrequency si défini, sinon utilise reinvestFrequency
+	 */
+	static shouldSellAndReinvest(investment: Investment, period: Period): boolean {
+		// Pour compatibilité avec l'ancien code
+		return this.shouldSellForStabilization(investment, period);
+	}
+
+	/**
+	 * Détermine si on doit vendre/réacheter pour stabiliser les gains selon sellFrequency
+	 */
+	static shouldSellForStabilization(investment: Investment, period: Period): boolean {
+		// Utiliser sellFrequency si défini, sinon utiliser reinvestFrequency comme fallback
+		const sellFreq = investment.sellFrequency !== undefined
+			? investment.sellFrequency
+			: investment.reinvestFrequency;
+
+		// Si 'none', ne pas vendre/réacheter
+		if (sellFreq === 'none') {
+			return false;
+		}
+
+		// Si c'est un tableau, vérifier si la période est dans le tableau
+		if (Array.isArray(sellFreq)) {
+			return sellFreq.length > 0 && sellFreq.includes(period);
+		}
+
+		// Si c'est une seule fréquence (string), comparer directement
+		return sellFreq === period;
+	}
+
+	/**
+	 * Détermine si on doit réinvestir les gains selon reinvestFrequency
+	 */
+	static shouldReinvestGains(investment: Investment, period: Period): boolean {
+		const reinvestFreq = investment.reinvestFrequency;
+
+		// Si 'none', ne pas réinvestir
+		if (reinvestFreq === 'none') {
+			return false;
+		}
+
+		// Si c'est un tableau, vérifier si la période est dans le tableau
+		if (Array.isArray(reinvestFreq)) {
+			return reinvestFreq.length > 0 && reinvestFreq.includes(period);
+		}
+
+		// Si c'est une seule fréquence (string), comparer directement
+		return reinvestFreq === period;
+	}
+
+	/**
+	 * Détermine si on doit réinvestir selon la fréquence (pour compatibilité)
+	 * @deprecated Utiliser shouldSellAndReinvest à la place
 	 */
 	static shouldReinvest(investment: Investment, period: Period): boolean {
-		return investment.reinvestFrequency === period;
+		const reinvestFreq = investment.reinvestFrequency;
+
+		// Si 'none', ne pas réinvestir
+		if (reinvestFreq === 'none') {
+			return false;
+		}
+
+		// Si c'est un tableau, vérifier si la période est dans le tableau
+		if (Array.isArray(reinvestFreq)) {
+			return reinvestFreq.includes(period);
+		}
+
+		// Si c'est une seule fréquence (string), comparer directement
+		return reinvestFreq === period;
 	}
 
 	/**
@@ -236,7 +560,7 @@ export class SimulationEngine {
 	static optimize(
 		constraints: OptimizationConstraints = {},
 		baseInvestment?: Investment,
-		annualIncome: number = 30000
+		annualIncome: number = 15000
 	): OptimizationResult & {
 		justifications: {
 			amount: string;
@@ -256,7 +580,7 @@ export class SimulationEngine {
 		const baseAmount = baseInvestment?.amount || constraints.maxAmount || 2000;
 		const baseLeverage = baseInvestment?.leverage || 1;
 		const baseExpectedReturn = baseInvestment?.expectedReturn || 10;
-		const basePlatform = baseInvestment?.platform || 'xtb';
+		const basePlatform = baseInvestment?.platform || 'etoro';
 		const baseAssetType = baseInvestment?.assetType || 'etf';
 
 		// Test de différents montants (de 50% à 200% du montant de base)
@@ -314,8 +638,11 @@ export class SimulationEngine {
 		}
 
 		// Test de différentes fréquences de réinvestissement
+		// IMPORTANT: Il faut simuler une année complète pour chaque fréquence
+		// car les frais de sortie (spread à chaque vente) peuvent être très élevés
+		// pour les fréquences quotidiennes/hebdomadaires
 		let bestFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'monthly';
-		let bestFrequencyReturn = 0;
+		let bestFrequencyReturn = -Infinity;
 		const frequencies: ('daily' | 'weekly' | 'monthly' | 'yearly')[] = ['daily', 'weekly', 'monthly', 'yearly'];
 
 		for (const frequency of frequencies) {
@@ -328,15 +655,64 @@ export class SimulationEngine {
 				expectedReturn: baseExpectedReturn,
 				reinvestFrequency: frequency
 			});
-			// Simuler plusieurs périodes pour voir l'effet du réinvestissement
-			const monthlyResult = this.simulate(testInvestment, 'monthly', annualIncome);
-			const reinvestedAmount = testInvestment.amount + monthlyResult.netGain;
-			const secondMonthInvestment = new Investment({ ...testInvestment, amount: reinvestedAmount });
-			const secondMonthResult = this.simulate(secondMonthInvestment, 'monthly', annualIncome);
-			const totalReturn = ((reinvestedAmount + secondMonthResult.netGain - testInvestment.amount) / testInvestment.amount) * 100;
 
-			if (totalReturn > bestFrequencyReturn) {
-				bestFrequencyReturn = totalReturn;
+			// Simuler une année complète avec réinvestissement selon la fréquence
+			// Pour chaque fréquence, on simule les périodes correspondantes sur 1 an
+			let currentAmount = bestAmount;
+			let totalFees = 0;
+			let totalGains = 0;
+
+			if (frequency === 'yearly') {
+				// Réinvestissement annuel : une seule simulation annuelle
+				const yearlyResult = this.simulate(testInvestment, 'yearly', annualIncome);
+				totalGains = yearlyResult.netGain;
+				totalFees = yearlyResult.fees.total;
+				currentAmount = yearlyResult.newCapital;
+			} else if (frequency === 'monthly') {
+				// Réinvestissement mensuel : 12 simulations mensuelles
+				for (let month = 0; month < 12; month++) {
+					const monthInvestment = new Investment({ ...testInvestment, amount: currentAmount });
+					const monthlyResult = this.simulate(monthInvestment, 'monthly', annualIncome);
+					totalGains += monthlyResult.netGain;
+					totalFees += monthlyResult.fees.total;
+					currentAmount = monthlyResult.newCapital;
+				}
+			} else if (frequency === 'weekly') {
+				// Réinvestissement hebdomadaire : ~52 simulations hebdomadaires
+				const weeksInYear = 52;
+				for (let week = 0; week < weeksInYear; week++) {
+					const weekInvestment = new Investment({ ...testInvestment, amount: currentAmount });
+					const weeklyResult = this.simulate(weekInvestment, 'weekly', annualIncome);
+					totalGains += weeklyResult.netGain;
+					totalFees += weeklyResult.fees.total;
+					currentAmount = weeklyResult.newCapital;
+				}
+			} else if (frequency === 'daily') {
+				// Réinvestissement quotidien : 365 simulations quotidiennes
+				// ATTENTION: Cela génère beaucoup de frais de sortie !
+				const daysInYear = 365;
+				for (let day = 0; day < daysInYear; day++) {
+					const dayInvestment = new Investment({ ...testInvestment, amount: currentAmount });
+					const dailyResult = this.simulate(dayInvestment, 'daily', annualIncome);
+					totalGains += dailyResult.netGain;
+					totalFees += dailyResult.fees.total;
+					currentAmount = dailyResult.newCapital;
+				}
+			}
+
+			// Calculer la rentabilité nette annuelle avec tous les frais inclus
+			const annualNetReturn = bestAmount > 0 ? (totalGains / bestAmount) * 100 : 0;
+
+			logger.debug('Comparaison fréquence de réinvestissement', {
+				frequency,
+				annualNetReturn,
+				totalFees,
+				totalGains,
+				finalAmount: currentAmount
+			});
+
+			if (annualNetReturn > bestFrequencyReturn) {
+				bestFrequencyReturn = annualNetReturn;
 				bestFrequency = frequency;
 			}
 		}
@@ -445,14 +821,25 @@ export class SimulationEngine {
 			yearly: 'annuel'
 		};
 
+		// Calculer le nombre de transactions par an pour cette fréquence
+		const transactionsPerYear: Record<'daily' | 'weekly' | 'monthly' | 'yearly', number> = {
+			daily: 365,
+			weekly: 52,
+			monthly: 12,
+			yearly: 1
+		};
+
+		const transactions = transactionsPerYear[frequency];
+
+		// Explication détaillée selon la fréquence avec prise en compte des frais de sortie
 		if (frequency === 'daily') {
-			return `Un réinvestissement quotidien maximise l'effet de la capitalisation composée, permettant une croissance exponentielle des gains. Cependant, cela nécessite une attention quotidienne et peut générer plus de frais de transaction si vous réinvestissez manuellement.`;
+			return `⚠️ ATTENTION: Une fréquence quotidienne (${transactions} transactions/an) génère ${transactions} frais de sortie par an (spread à chaque vente). Malgré cela, cette fréquence maximise la rentabilité nette à ${returnRate.toFixed(2)}% annuel. Cependant, les frais de transaction cumulés sont très élevés et peuvent réduire significativement vos gains. Une fréquence mensuelle ou hebdomadaire est généralement plus rentable en tenant compte de tous les frais.`;
 		} else if (frequency === 'weekly') {
-			return `Un réinvestissement hebdomadaire offre un bon compromis entre capitalisation composée et praticité. Il permet de capturer les gains régulièrement tout en évitant une gestion trop fréquente.`;
+			return `Une fréquence hebdomadaire (${transactions} transactions/an) génère ${transactions} frais de sortie par an. Cette fréquence maximise la rentabilité nette à ${returnRate.toFixed(2)}% annuel en optimisant le compromis entre capitalisation des gains et minimisation des frais de transaction. Les frais de sortie sont modérés comparés à une fréquence quotidienne.`;
 		} else if (frequency === 'monthly') {
-			return `Un réinvestissement mensuel est recommandé car il équilibre l'effet de capitalisation composée avec la simplicité de gestion. C'est la fréquence la plus pratique pour la plupart des investisseurs et permet de réinvestir les gains sans surcharge administrative.`;
+			return `Une fréquence mensuelle (${transactions} transactions/an) génère ${transactions} frais de sortie par an. Cette fréquence maximise la rentabilité nette à ${returnRate.toFixed(2)}% annuel. C'est généralement le meilleur compromis entre capitalisation des gains et minimisation des frais de transaction, car les frais de sortie restent raisonnables tout en permettant une capitalisation régulière.`;
 		} else {
-			return `Un réinvestissement annuel est proposé pour simplifier la gestion. Bien que moins optimal en termes de capitalisation composée, cela réduit la complexité et peut être plus adapté si vous préférez une approche "set and forget".`;
+			return `Une fréquence annuelle (${transactions} transaction/an) génère seulement ${transactions} frais de sortie par an. Cette fréquence maximise la rentabilité nette à ${returnRate.toFixed(2)}% annuel en minimisant les frais de transaction. Cependant, vous capitalisez moins souvent vos gains, ce qui peut réduire la croissance à long terme.`;
 		}
 	}
 

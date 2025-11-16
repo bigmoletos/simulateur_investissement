@@ -44,34 +44,53 @@
 		gap: 0.5rem;
 		cursor: pointer;
 		padding: 0.5rem 1rem;
-		border: 2px solid #e0e0e0;
+		border: 2px solid var(--border-color, #e0e0e0);
 		border-radius: 6px;
 		transition: all 0.2s;
 		user-select: none;
+		background: var(--bg-primary, white);
+	}
+
+	:global(:root.dark) .frequency-option {
+		background: var(--bg-primary);
+		border-color: var(--border-color);
 	}
 
 	.frequency-option:hover {
-		border-color: #667eea;
-		background-color: #f8f9ff;
+		border-color: #d4af37;
+		background-color: var(--bg-secondary, #f8f9ff);
+	}
+
+	:global(:root.dark) .frequency-option:hover {
+		background-color: var(--bg-secondary);
 	}
 
 	.frequency-option input[type="radio"] {
 		cursor: pointer;
-		accent-color: #667eea;
+		accent-color: #d4af37;
 	}
 
 	.frequency-option input[type="radio"]:checked + .frequency-label {
 		font-weight: 600;
-		color: #667eea;
+		color: #d4af37;
 	}
 
 	.frequency-option:has(input:checked) {
-		border-color: #667eea;
-		background-color: #f8f9ff;
+		border-color: #d4af37;
+		background-color: var(--bg-secondary, #f8f9ff);
+	}
+
+	:global(:root.dark) .frequency-option:has(input:checked) {
+		background-color: var(--bg-secondary);
 	}
 
 	.frequency-label {
 		cursor: pointer;
 		font-size: 0.9rem;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .frequency-label {
+		color: var(--text-primary);
 	}
 </style>

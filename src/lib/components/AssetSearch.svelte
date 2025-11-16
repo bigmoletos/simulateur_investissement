@@ -59,6 +59,11 @@
 				suggestions = await AssetSearchService.search(value.trim(), 10);
 				showSuggestions = suggestions.length > 0;
 				isLoading = false;
+				// Si un actif correspond exactement au nom saisi, le sélectionner automatiquement
+				const exactMatch = suggestions.find(s => s.name.toUpperCase() === value.trim().toUpperCase());
+				if (exactMatch) {
+					selectAsset(exactMatch);
+				}
 			} else {
 				suggestions = [];
 				showSuggestions = false;
@@ -157,7 +162,6 @@
 </script>
 
 <div class="asset-search-container">
-	<label class="search-label">Rechercher un actif/ETF</label>
 	<div class="search-fields">
 		<div class="search-field-group">
 			<label class="field-label">Nom complet</label>
@@ -233,7 +237,7 @@
 		</div>
 	{/if}
 
-	{#if (value || tickerValue) && !showSuggestions && (value.length >= 2 || tickerValue.length >= 1) && !isLoading && !selectedAsset}
+	{#if (value || tickerValue) && !showSuggestions && (value.length >= 2 || tickerValue.length >= 1) && !isLoading && !selectedAsset && suggestions.length === 0}
 		<div class="no-results">
 			<small>Aucun résultat trouvé. Vérifiez le nom ou le ticker saisi.</small>
 		</div>
@@ -244,32 +248,54 @@
 	.asset-search-container {
 		position: relative;
 		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.search-label {
-		display: block;
-		margin-bottom: 0.75rem;
-		font-weight: 600;
-		color: #374151;
-		font-size: 0.9rem;
+		display: none; /* Masqué car le label est déjà dans excel-cell-label */
+	}
+
+	:global(:root.dark) .search-label {
+		color: var(--text-primary);
 	}
 
 	.search-fields {
-		display: grid;
-		grid-template-columns: 3fr 1fr;
-		gap: 1rem;
+		display: flex;
+		gap: 0.5rem;
+		align-items: flex-end;
+		width: 100%;
+		min-width: 0;
+		flex: 1;
 	}
 
 	.search-field-group {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.25rem;
+		min-width: 0;
+	}
+
+	.search-field-group:first-child {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.search-field-group:last-child {
+		flex: 0 0 140px;
 	}
 
 	.field-label {
-		font-size: 0.85rem;
+		font-size: 0.6rem;
 		font-weight: 600;
-		color: #6b7280;
+		color: var(--text-secondary, #6b7280);
+		white-space: nowrap;
+	}
+
+	:global(:root.dark) .field-label {
+		color: var(--text-secondary);
 	}
 
 	.search-wrapper {
@@ -280,12 +306,26 @@
 
 	.search-input {
 		width: 100%;
-		min-width: 600px;
-		padding: 0.75rem 1rem;
-		border: 2px solid #e5e7eb;
-		border-radius: 6px;
-		font-size: 1rem;
+		min-width: 0;
+		padding: 0.4rem 0.6rem;
+		border: 1px solid var(--border-color, #e5e7eb);
+		border-radius: 4px;
+		font-size: 0.85rem;
 		transition: border-color 0.2s;
+		background: var(--bg-primary, white);
+		color: var(--text-primary, #333);
+		box-sizing: border-box;
+		flex: 1;
+	}
+
+	.ticker-input {
+		width: 100%;
+	}
+
+	:global(:root.dark) .search-input {
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		border-color: var(--border-color);
 	}
 
 	.ticker-input {
@@ -297,14 +337,14 @@
 
 	.search-input:focus {
 		outline: none;
-		border-color: #667eea;
-		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		border-color: #d4af37;
+		box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
 	}
 
 	.loading-indicator {
 		position: absolute;
-		right: 1rem;
-		font-size: 1.2rem;
+		right: 0.5rem;
+		font-size: 0.9rem;
 		animation: pulse 1.5s ease-in-out infinite;
 	}
 
@@ -322,26 +362,38 @@
 		top: 100%;
 		left: 0;
 		right: 0;
-		background: white;
-		border: 2px solid #e5e7eb;
+		background: var(--bg-primary, white);
+		border: 2px solid var(--border-color, #e5e7eb);
 		border-top: none;
 		border-radius: 0 0 6px 6px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 4px 12px var(--shadow, rgba(0, 0, 0, 0.15));
 		max-height: 400px;
 		overflow-y: auto;
 		z-index: 1000;
 		margin-top: -2px;
 	}
 
+	:global(:root.dark) .suggestions-dropdown {
+		background: var(--bg-primary);
+		border-color: var(--border-color);
+	}
+
 	.suggestion-item {
 		width: 100%;
 		padding: 1rem;
 		text-align: left;
-		background: white;
+		background: var(--bg-primary, white);
 		border: none;
-		border-bottom: 1px solid #f3f4f6;
+		border-bottom: 1px solid var(--border-color, #f3f4f6);
 		cursor: pointer;
 		transition: background-color 0.15s;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .suggestion-item {
+		background: var(--bg-primary);
+		border-bottom-color: var(--border-color);
+		color: var(--text-primary);
 	}
 
 	.suggestion-item:last-child {
@@ -350,7 +402,12 @@
 
 	.suggestion-item:hover,
 	.suggestion-item.selected {
-		background: #f8f9ff;
+		background: var(--bg-secondary, #f8f9ff);
+	}
+
+	:global(:root.dark) .suggestion-item:hover,
+	:global(:root.dark) .suggestion-item.selected {
+		background: var(--bg-secondary);
 	}
 
 	.suggestion-header {
@@ -363,15 +420,19 @@
 
 	.suggestion-name {
 		font-weight: 600;
-		color: #111827;
+		color: var(--text-primary, #111827);
 		font-size: 0.95rem;
 		flex: 1;
+	}
+
+	:global(:root.dark) .suggestion-name {
+		color: var(--text-primary);
 	}
 
 	.suggestion-type {
 		font-size: 0.75rem;
 		padding: 0.25rem 0.5rem;
-		background: #667eea;
+		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 		color: white;
 		border-radius: 4px;
 		font-weight: 600;
@@ -383,7 +444,11 @@
 		gap: 1rem;
 		flex-wrap: wrap;
 		font-size: 0.85rem;
-		color: #6b7280;
+		color: var(--text-secondary, #6b7280);
+	}
+
+	:global(:root.dark) .suggestion-details {
+		color: var(--text-secondary);
 	}
 
 	.suggestion-ticker,
@@ -402,51 +467,72 @@
 	}
 
 	.selected-asset-info {
-		margin-top: 1rem;
-		padding: 1rem;
-		background: #f0fdf4;
-		border: 2px solid #10b981;
-		border-radius: 6px;
+		margin-top: 0.5rem;
+		padding: 0.4rem 0.6rem;
+		background: var(--bg-secondary, #f0fdf4);
+		border: 1px solid #10b981;
+		border-radius: 4px;
 		display: flex;
-		flex-direction: column;
+		flex-direction: row;
+		align-items: center;
 		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	:global(:root.dark) .selected-asset-info {
+		background: var(--bg-secondary);
+		border-color: #10b981;
 	}
 
 	.info-label {
-		font-size: 0.85rem;
-		color: #065f46;
+		font-size: 0.65rem;
+		color: var(--text-primary, #065f46);
 		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.5px;
+		letter-spacing: 0.3px;
+	}
+
+	:global(:root.dark) .info-label {
+		color: var(--text-primary);
 	}
 
 	.ticker-display {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.5rem;
 		flex-wrap: wrap;
 	}
 
 	.ticker-symbol {
-		font-size: 1.5rem;
+		font-size: 0.85rem;
 		font-weight: 700;
 		color: #059669;
 		font-family: 'Courier New', monospace;
-		background: white;
-		padding: 0.5rem 1rem;
-		border-radius: 6px;
-		border: 2px solid #10b981;
-		box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+		background: var(--bg-primary, white);
+		padding: 0.2rem 0.5rem;
+		border-radius: 3px;
+		border: 1px solid #10b981;
+	}
+
+	:global(:root.dark) .ticker-symbol {
+		background: var(--bg-primary);
+		color: #10b981;
 	}
 
 	.isin-display {
-		font-size: 0.9rem;
-		color: #047857;
+		font-size: 0.7rem;
+		color: var(--text-secondary, #047857);
 		font-family: 'Courier New', monospace;
-		background: white;
-		padding: 0.5rem 1rem;
-		border-radius: 6px;
+		background: var(--bg-primary, white);
+		padding: 0.2rem 0.5rem;
+		border-radius: 3px;
 		border: 1px solid #10b981;
+	}
+
+	:global(:root.dark) .isin-display {
+		background: var(--bg-primary);
+		color: var(--text-secondary);
+		border-color: #10b981;
 	}
 </style>
 

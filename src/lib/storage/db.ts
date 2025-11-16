@@ -1,8 +1,8 @@
 /**
  * Service de stockage IndexedDB pour le simulateur de placement
- * 
+ *
  * Stocke les simulations, paramètres utilisateur et historique
- * 
+ *
  * @author Simulateur de Placement
  * @version 1.0.0
  * @date 2025-11-15

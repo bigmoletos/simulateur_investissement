@@ -10,7 +10,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import type { Investment as InvestmentType, ValidationResult } from '../types/index.js';
+import type { Investment as InvestmentType, ValidationResult, FrequencySelection, ReinvestFrequency } from '../types/index.js';
 import { validateInvestment } from '../validators/schemas.js';
 
 export class Investment implements InvestmentType {
@@ -20,9 +20,14 @@ export class Investment implements InvestmentType {
 	platform: 'xtb' | 'etoro';
 	leverage: number;
 	stopLoss: number;
+	takeProfit?: number;
 	expectedReturn: number;
-	reinvestFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
-	monthlyCapitalAddition?: number;
+	reinvestFrequency: ReinvestFrequency | FrequencySelection; // Fréquence(s) de réinvestissement (peut être un tableau ou 'none')
+	sellFrequency?: ReinvestFrequency | FrequencySelection; // Fréquence(s) de sortie/réachat pour stabiliser les gains
+	sellStrategy?: 'reinvest' | 'withdraw';
+	capitalAdditionAmount?: number;
+	capitalAdditionFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+	monthlyCapitalAddition?: number; // Rétrocompatibilité
 	createdAt: Date;
 	updatedAt: Date;
 	name?: string;
@@ -31,12 +36,21 @@ export class Investment implements InvestmentType {
 		this.id = data.id || uuidv4();
 		this.amount = data.amount || 0;
 		this.assetType = data.assetType || 'action';
-		this.platform = data.platform || 'xtb';
+		this.platform = data.platform || 'etoro';
 		this.leverage = data.leverage || 1;
 		this.stopLoss = data.stopLoss || 5;
+		this.takeProfit = data.takeProfit !== undefined ? data.takeProfit : 100; // Par défaut: 100%
 		this.expectedReturn = data.expectedReturn || 0;
-		this.reinvestFrequency = data.reinvestFrequency || 'monthly';
-		this.monthlyCapitalAddition = data.monthlyCapitalAddition || 0;
+		// Gérer la rétrocompatibilité: convertir une seule fréquence en tableau si nécessaire
+		const defaultReinvest = data.reinvestFrequency || 'monthly';
+		this.reinvestFrequency = Array.isArray(defaultReinvest) || defaultReinvest === 'none'
+			? defaultReinvest
+			: defaultReinvest; // Conserver l'ancien format pour rétrocompatibilité
+		this.sellFrequency = data.sellFrequency; // Par défaut: undefined (utilise reinvestFrequency)
+		this.sellStrategy = data.sellStrategy || 'reinvest';
+		this.capitalAdditionAmount = data.capitalAdditionAmount;
+		this.capitalAdditionFrequency = data.capitalAdditionFrequency;
+		this.monthlyCapitalAddition = data.monthlyCapitalAddition;
 		this.createdAt = data.createdAt || new Date();
 		this.updatedAt = data.updatedAt || new Date();
 		this.name = data.name;
@@ -63,6 +77,31 @@ export class Investment implements InvestmentType {
 	 */
 	clone(): Investment {
 		return new Investment({ ...this });
+	}
+
+	/**
+	 * Convertit l'investissement en objet JSON pour sérialisation
+	 */
+	toJSON(): Partial<InvestmentType> {
+		return {
+			id: this.id,
+			amount: this.amount,
+			assetType: this.assetType,
+			platform: this.platform,
+			leverage: this.leverage,
+			stopLoss: this.stopLoss,
+			takeProfit: this.takeProfit,
+			expectedReturn: this.expectedReturn,
+			reinvestFrequency: this.reinvestFrequency,
+			sellFrequency: this.sellFrequency,
+			sellStrategy: this.sellStrategy,
+			capitalAdditionAmount: this.capitalAdditionAmount,
+			capitalAdditionFrequency: this.capitalAdditionFrequency,
+			monthlyCapitalAddition: this.monthlyCapitalAddition,
+			createdAt: this.createdAt,
+			updatedAt: this.updatedAt,
+			name: this.name
+		};
 	}
 }
 

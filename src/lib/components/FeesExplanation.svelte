@@ -2,22 +2,42 @@
 	import type { Platform } from '../types/index.js';
 
 	export let platform: Platform = 'xtb';
+
+	let expandedFees: Set<string> = new Set();
+
+	function toggleFee(feeId: string) {
+		if (expandedFees.has(feeId)) {
+			expandedFees.delete(feeId);
+		} else {
+			expandedFees.add(feeId);
+		}
+		expandedFees = expandedFees; // Trigger reactivity
+	}
 </script>
 
 <div class="fees-explanation">
 	<h2>💰 Explication des Frais</h2>
 	<p class="subtitle">
-		Comprendre tous les frais qui impactent votre rentabilité nette
+		Cliquez sur un type de frais pour voir les détails (fermé par défaut)
 	</p>
 
-	<div class="fees-list">
+	<div class="fees-content-row">
+		<div class="fees-list">
 		<!-- Spread -->
 		<div class="fee-item">
-			<div class="fee-header">
-				<h3>📊 Spread</h3>
-				<span class="fee-badge">Frais d'entrée</span>
-			</div>
-			<div class="fee-content">
+			<button
+				class="fee-header"
+				class:expanded={expandedFees.has('spread')}
+				on:click={() => toggleFee('spread')}
+			>
+				<div class="fee-header-content">
+					<h3>📊 Spread</h3>
+					<span class="fee-badge">Frais d'entrée</span>
+				</div>
+				<span class="expand-icon">{expandedFees.has('spread') ? '▼' : '▶'}</span>
+			</button>
+			{#if expandedFees.has('spread')}
+				<div class="fee-content">
 				<p>
 					<strong>Définition:</strong> Le spread est la différence entre le prix d'achat (ask) et le prix de vente (bid) d'un actif.
 					C'est le coût caché de chaque transaction.
@@ -40,16 +60,25 @@
 						<li>Fonds: {platform === 'xtb' ? '0.10%' : '0.15%'}</li>
 					</ul>
 				</div>
-			</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Commission -->
 		<div class="fee-item">
-			<div class="fee-header">
-				<h3>💳 Commission</h3>
-				<span class="fee-badge">Frais d'entrée</span>
-			</div>
-			<div class="fee-content">
+			<button
+				class="fee-header"
+				class:expanded={expandedFees.has('commission')}
+				on:click={() => toggleFee('commission')}
+			>
+				<div class="fee-header-content">
+					<h3>💳 Commission</h3>
+					<span class="fee-badge">Frais d'entrée</span>
+				</div>
+				<span class="expand-icon">{expandedFees.has('commission') ? '▼' : '▶'}</span>
+			</button>
+			{#if expandedFees.has('commission')}
+				<div class="fee-content">
 				<p>
 					<strong>Définition:</strong> La commission est un frais fixe ou variable prélevé par la plateforme pour exécuter votre transaction.
 				</p>
@@ -68,16 +97,25 @@
 				<div class="fee-example">
 					<strong>Exemple:</strong> Investir 150 000€ sur XTB en un mois → Commission de 0.2% × 150 000€ = 300€ (sur la partie au-delà de 100k€).
 				</div>
-			</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Swap Overnight -->
 		<div class="fee-item">
-			<div class="fee-header">
-				<h3>🌙 Swap Overnight</h3>
-				<span class="fee-badge">Frais récurrents</span>
-			</div>
-			<div class="fee-content">
+			<button
+				class="fee-header"
+				class:expanded={expandedFees.has('swap')}
+				on:click={() => toggleFee('swap')}
+			>
+				<div class="fee-header-content">
+					<h3>🌙 Swap Overnight</h3>
+					<span class="fee-badge">Frais récurrents</span>
+				</div>
+				<span class="expand-icon">{expandedFees.has('swap') ? '▼' : '▶'}</span>
+			</button>
+			{#if expandedFees.has('swap')}
+				<div class="fee-content">
 				<p>
 					<strong>Définition:</strong> Le swap overnight (ou frais de financement) est un coût quotidien appliqué aux positions avec levier (effet de levier > 1).
 				</p>
@@ -102,16 +140,25 @@
 					</ul>
 					<strong>⚠️ Attention:</strong> Les frais de swap peuvent être très élevés avec un levier important!
 				</div>
-			</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Frais de retrait -->
 		<div class="fee-item">
-			<div class="fee-header">
-				<h3>💸 Frais de Retrait</h3>
-				<span class="fee-badge">Frais ponctuels</span>
-			</div>
-			<div class="fee-content">
+			<button
+				class="fee-header"
+				class:expanded={expandedFees.has('retrait')}
+				on:click={() => toggleFee('retrait')}
+			>
+				<div class="fee-header-content">
+					<h3>💸 Frais de Retrait</h3>
+					<span class="fee-badge">Frais ponctuels</span>
+				</div>
+				<span class="expand-icon">{expandedFees.has('retrait') ? '▼' : '▶'}</span>
+			</button>
+			{#if expandedFees.has('retrait')}
+				<div class="fee-content">
 				<p>
 					<strong>Définition:</strong> Les frais de retrait sont des coûts appliqués lorsque vous retirez de l'argent de votre compte de trading vers votre compte bancaire.
 				</p>
@@ -128,16 +175,25 @@
 				<div class="fee-example">
 					<strong>Conseil:</strong> Sur eToro, regroupez vos retraits pour minimiser les frais (1 retrait de 1000€ coûte 5$, mais 10 retraits de 100€ coûtent 50$).
 				</div>
-			</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Frais de gestion ETF (TER) -->
 		<div class="fee-item">
-			<div class="fee-header">
-				<h3>📈 Frais de Gestion ETF (TER)</h3>
-				<span class="fee-badge">Frais intégrés</span>
-			</div>
-			<div class="fee-content">
+			<button
+				class="fee-header"
+				class:expanded={expandedFees.has('ter')}
+				on:click={() => toggleFee('ter')}
+			>
+				<div class="fee-header-content">
+					<h3>📈 Frais de Gestion ETF (TER)</h3>
+					<span class="fee-badge">Frais intégrés</span>
+				</div>
+				<span class="expand-icon">{expandedFees.has('ter') ? '▼' : '▶'}</span>
+			</button>
+			{#if expandedFees.has('ter')}
+				<div class="fee-content">
 				<p>
 					<strong>Définition:</strong> Le TER (Total Expense Ratio) est un frais annuel prélevé directement sur la valeur de l'ETF par le gestionnaire du fonds.
 					Il couvre les frais de gestion, d'administration et d'exploitation du fonds.
@@ -167,16 +223,25 @@
 					<strong>ℹ️ Note:</strong> Ces frais sont déjà inclus dans le rendement attendu que vous saisissez.
 					Ils ne sont pas déduits séparément dans nos calculs car ils impactent déjà la performance de l'ETF.
 				</div>
-			</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Frais de garde -->
 		<div class="fee-item">
-			<div class="fee-header">
-				<h3>🏦 Frais de Garde</h3>
-				<span class="fee-badge">Non applicable</span>
-			</div>
-			<div class="fee-content">
+			<button
+				class="fee-header"
+				class:expanded={expandedFees.has('garde')}
+				on:click={() => toggleFee('garde')}
+			>
+				<div class="fee-header-content">
+					<h3>🏦 Frais de Garde</h3>
+					<span class="fee-badge">Non applicable</span>
+				</div>
+				<span class="expand-icon">{expandedFees.has('garde') ? '▼' : '▶'}</span>
+			</button>
+			{#if expandedFees.has('garde')}
+				<div class="fee-content">
 				<p>
 					<strong>Définition:</strong> Les frais de garde sont des coûts annuels facturés par certains intermédiaires financiers pour la conservation de vos titres.
 				</p>
@@ -189,16 +254,25 @@
 				<div class="fee-example">
 					<strong>Note:</strong> Les frais de garde sont plutôt associés aux comptes titres traditionnels chez les banques classiques (généralement 0.1% à 0.3% par an).
 				</div>
-			</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Commission sur transaction -->
 		<div class="fee-item">
-			<div class="fee-header">
-				<h3>🔄 Commission sur Transaction</h3>
-				<span class="fee-badge">Déjà inclus</span>
-			</div>
-			<div class="fee-content">
+			<button
+				class="fee-header"
+				class:expanded={expandedFees.has('transaction')}
+				on:click={() => toggleFee('transaction')}
+			>
+				<div class="fee-header-content">
+					<h3>🔄 Commission sur Transaction</h3>
+					<span class="fee-badge">Déjà inclus</span>
+				</div>
+				<span class="expand-icon">{expandedFees.has('transaction') ? '▼' : '▶'}</span>
+			</button>
+			{#if expandedFees.has('transaction')}
+				<div class="fee-content">
 				<p>
 					<strong>Définition:</strong> La commission sur transaction est un frais prélevé à chaque achat ou vente d'actif.
 				</p>
@@ -225,12 +299,13 @@
 					</ul>
 					<strong>💡 Impact:</strong> Les frais de sortie peuvent réduire significativement votre rentabilité si vous réinvestissez fréquemment (quotidien ou hebdomadaire).
 				</div>
-			</div>
+				</div>
+			{/if}
 		</div>
-	</div>
+		</div>
 
-	<div class="summary-box">
-		<h3>📋 Résumé des Frais dans le Simulateur</h3>
+		<div class="summary-box">
+			<h3>📋 Résumé des Frais dans le Simulateur</h3>
 		<table class="summary-table">
 			<thead>
 				<tr>
@@ -257,8 +332,8 @@
 				</tr>
 				<tr>
 					<td><strong>Frais de retrait</strong></td>
-					<td>Lors du retrait</td>
-					<td>⚠️ Affiché mais non déduit des calculs périodiques</td>
+					<td>Lors du retrait (si stratégie = retirer)</td>
+					<td>✅ Oui (déduit du montant retiré)</td>
 				</tr>
 				<tr>
 					<td><strong>Frais de gestion ETF (TER)</strong></td>
@@ -271,12 +346,18 @@
 					<td>❌ Non applicable (XTB/eToro)</td>
 				</tr>
 				<tr>
-					<td><strong>Commission à la vente</strong></td>
-					<td>À la vente</td>
-					<td>❌ Non inclus (simulation sans vente)</td>
+					<td><strong>Frais de sortie (spread)</strong></td>
+					<td>À la vente (si réinvestissement/sortie)</td>
+					<td>✅ Oui (si fréquence de sortie/réachat activée)</td>
+				</tr>
+				<tr>
+					<td><strong>Frais de réentrée</strong></td>
+					<td>Au rachat après vente</td>
+					<td>✅ Oui (si stratégie = réinvestir après vente)</td>
 				</tr>
 			</tbody>
 		</table>
+		</div>
 	</div>
 
 	<div class="info-box">
@@ -303,23 +384,51 @@
 
 <style>
 	.fees-explanation {
-		background: white;
+		background: var(--bg-primary, white);
 		border-radius: 8px;
 		padding: 2rem;
 		margin-top: 2rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 2px 8px var(--shadow, rgba(0, 0, 0, 0.1));
+		color: var(--text-primary, #111827);
+	}
+
+	:global(:root.dark) .fees-explanation {
+		background: var(--bg-primary);
+		color: var(--text-primary);
+	}
+
+	.fees-content-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+		align-items: start;
+		margin-top: 1rem;
+	}
+
+	@media (max-width: 1200px) {
+		.fees-content-row {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.fees-explanation h2 {
 		margin-top: 0;
-		color: #111827;
+		color: var(--text-primary, #111827);
 		font-size: 1.75rem;
 	}
 
+	:global(:root.dark) .fees-explanation h2 {
+		color: var(--text-primary);
+	}
+
 	.subtitle {
-		color: #6b7280;
+		color: var(--text-secondary, #6b7280);
 		font-size: 1rem;
 		margin-bottom: 2rem;
+	}
+
+	:global(:root.dark) .subtitle {
+		color: var(--text-secondary);
 	}
 
 	.fees-list {
@@ -329,19 +438,46 @@
 	}
 
 	.fee-item {
-		border: 1px solid #e5e7eb;
+		border: 1px solid var(--border-color, #e5e7eb);
 		border-radius: 8px;
 		overflow: hidden;
-		background: #f9fafb;
+		background: var(--bg-secondary, #f9fafb);
+	}
+
+	:global(:root.dark) .fee-item {
+		border-color: var(--border-color);
+		background: var(--bg-secondary);
 	}
 
 	.fee-header {
+		width: 100%;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		padding: 1rem 1.5rem;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+		background-image:
+			radial-gradient(circle at 30% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 60%);
 		color: white;
+		border: none;
+		cursor: pointer;
+		text-align: left;
+		transition: background 0.2s, transform 0.1s;
+	}
+
+	.fee-header:hover {
+		background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+	}
+
+	.fee-header:active {
+		transform: scale(0.98);
+	}
+
+	.fee-header-content {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex: 1;
 	}
 
 	.fee-header h3 {
@@ -357,47 +493,125 @@
 		font-weight: 600;
 	}
 
+	.expand-icon {
+		font-size: 1rem;
+		color: white;
+		margin-left: 1rem;
+		flex-shrink: 0;
+		transition: transform 0.2s;
+	}
+
+	.fee-header.expanded .expand-icon {
+		transform: rotate(0deg);
+	}
+
 	.fee-content {
 		padding: 1.5rem;
+		background: var(--bg-primary, white);
+		color: var(--text-primary, #374151);
+	}
+
+	:global(:root.dark) .fee-content {
+		background: var(--bg-primary);
+		color: var(--text-primary);
 	}
 
 	.fee-content p {
 		margin-bottom: 1rem;
 		line-height: 1.6;
-		color: #374151;
+		color: var(--text-primary, #374151);
+	}
+
+	:global(:root.dark) .fee-content p {
+		color: var(--text-primary);
 	}
 
 	.fee-content strong {
-		color: #111827;
+		color: var(--text-primary, #111827);
+		font-weight: 600;
+	}
+
+	:global(:root.dark) .fee-content strong {
+		color: var(--text-primary);
+	}
+
+	.fee-content ul {
+		color: var(--text-primary, #374151);
+	}
+
+	:global(:root.dark) .fee-content ul {
+		color: var(--text-primary);
+	}
+
+	.fee-content li {
+		color: var(--text-primary, #374151);
+	}
+
+	:global(:root.dark) .fee-content li {
+		color: var(--text-primary);
 	}
 
 	.fee-example {
 		margin-top: 1rem;
 		padding: 1rem;
-		background: #eff6ff;
+		background: var(--bg-secondary, #eff6ff);
 		border-left: 4px solid #3b82f6;
 		border-radius: 4px;
+		color: var(--text-primary, #374151);
+	}
+
+	:global(:root.dark) .fee-example {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	.fee-example strong {
+		color: var(--text-primary, #111827);
+	}
+
+	:global(:root.dark) .fee-example strong {
+		color: var(--text-primary);
 	}
 
 	.fee-example ul {
 		margin: 0.5rem 0 0 1.5rem;
+		color: var(--text-primary, #374151);
+	}
+
+	:global(:root.dark) .fee-example ul {
+		color: var(--text-primary);
 	}
 
 	.fee-example li {
 		margin-bottom: 0.5rem;
+		color: var(--text-primary, #374151);
+	}
+
+	:global(:root.dark) .fee-example li {
+		color: var(--text-primary);
 	}
 
 	.summary-box {
 		margin-top: 2rem;
 		padding: 1.5rem;
-		background: #f0fdf4;
+		background: var(--bg-secondary, #f0fdf4);
 		border: 2px solid #10b981;
 		border-radius: 8px;
+		color: var(--text-primary, #065f46);
+	}
+
+	:global(:root.dark) .summary-box {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
 	}
 
 	.summary-box h3 {
 		margin-top: 0;
-		color: #065f46;
+		color: var(--text-primary, #065f46);
+	}
+
+	:global(:root.dark) .summary-box h3 {
+		color: var(--text-primary);
 	}
 
 	.summary-table {
@@ -410,7 +624,12 @@
 	.summary-table td {
 		padding: 0.75rem;
 		text-align: left;
-		border-bottom: 1px solid #d1d5db;
+		border-bottom: 1px solid var(--border-color, #d1d5db);
+	}
+
+	:global(:root.dark) .summary-table th,
+	:global(:root.dark) .summary-table td {
+		border-bottom-color: var(--border-color);
 	}
 
 	.summary-table th {
@@ -420,30 +639,71 @@
 	}
 
 	.summary-table td {
-		background: white;
+		background: var(--bg-primary, white);
+		color: var(--text-primary, #374151);
+	}
+
+	:global(:root.dark) .summary-table td {
+		background: var(--bg-primary);
+		color: var(--text-primary);
+	}
+
+	.summary-table td strong {
+		color: var(--text-primary, #111827);
+	}
+
+	:global(:root.dark) .summary-table td strong {
+		color: var(--text-primary);
 	}
 
 	.info-box {
 		margin-top: 2rem;
 		padding: 1.5rem;
-		background: #fef3c7;
+		background: var(--bg-secondary, #fef3c7);
 		border-left: 4px solid #f59e0b;
 		border-radius: 4px;
+		color: var(--text-primary, #78350f);
+	}
+
+	:global(:root.dark) .info-box {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
 	}
 
 	.info-box h3 {
 		margin-top: 0;
-		color: #92400e;
+		color: var(--text-primary, #92400e);
+	}
+
+	:global(:root.dark) .info-box h3 {
+		color: var(--text-primary);
 	}
 
 	.info-box ul {
 		margin: 0.5rem 0 0 1.5rem;
+		color: var(--text-primary, #78350f);
+	}
+
+	:global(:root.dark) .info-box ul {
+		color: var(--text-primary);
 	}
 
 	.info-box li {
 		margin-bottom: 0.75rem;
-		color: #78350f;
+		color: var(--text-primary, #78350f);
 		line-height: 1.6;
+	}
+
+	:global(:root.dark) .info-box li {
+		color: var(--text-primary);
+	}
+
+	.info-box li strong {
+		color: var(--text-primary, #78350f);
+	}
+
+	:global(:root.dark) .info-box li strong {
+		color: var(--text-primary);
 	}
 </style>
 

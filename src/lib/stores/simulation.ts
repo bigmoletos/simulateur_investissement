@@ -1,6 +1,6 @@
 /**
  * Store Svelte pour la gestion des simulations
- * 
+ *
  * @author Simulateur de Placement
  * @version 1.0.0
  * @date 2025-11-15

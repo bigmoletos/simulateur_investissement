@@ -9,7 +9,13 @@
 export type AssetType = 'action' | 'fonds' | 'etf';
 export type Platform = 'xtb' | 'etoro';
 export type ReinvestFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type SellFrequency = ReinvestFrequency | 'never'; // Fréquence de sortie/réachat, avec option "jamais"
 export type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type SellStrategy = 'reinvest' | 'withdraw'; // Stratégie de vente : réinvestir ou retirer
+
+// Types pour sélection multiple de fréquences
+export type FrequencySelection = ReinvestFrequency[] | 'none'; // Tableau de fréquences (peut être vide), ou 'none' pour aucun réinvestissement
+export type SellFrequencySelection = ReinvestFrequency[] | 'none'; // Tableau de fréquences (peut être vide), ou 'none' pour aucune sortie/réachat
 
 /**
  * Investissement avec tous ses paramètres
@@ -21,9 +27,16 @@ export interface Investment {
 	platform: Platform;
 	leverage: number;
 	stopLoss: number;
+	takeProfit?: number; // Prise de profit en % (optionnel)
 	expectedReturn: number;
-	reinvestFrequency: ReinvestFrequency;
-	monthlyCapitalAddition?: number; // Capital ajouté chaque mois
+	reinvestFrequency: ReinvestFrequency | FrequencySelection; // Fréquence(s) de réinvestissement (peut être un tableau ou 'none')
+	sellFrequency?: ReinvestFrequency | SellFrequencySelection; // Fréquence(s) de sortie/réachat pour stabiliser les gains (défaut: même que reinvestFrequency)
+	sellStrategy?: SellStrategy; // Stratégie de vente : réinvestir ou retirer (défaut: reinvest)
+	// Capital additionnel avec fréquence configurable
+	capitalAdditionAmount?: number; // Montant d'ajout de capital
+	capitalAdditionFrequency?: ReinvestFrequency; // Fréquence d'ajout (daily, weekly, monthly, yearly)
+	// Rétrocompatibilité
+	monthlyCapitalAddition?: number; // Capital ajouté chaque mois (déprécié, utiliser capitalAdditionAmount + capitalAdditionFrequency)
 	createdAt: Date;
 	updatedAt: Date;
 	name?: string;
@@ -53,6 +66,7 @@ export interface FeeBreakdown {
 	entry: number;
 	exit?: number; // Frais de sortie (spread à la vente)
 	swap: number;
+	withdrawal?: number; // Frais de retrait (si stratégie = retirer)
 	total: number;
 	// Détails additionnels
 	spread?: number;
@@ -102,16 +116,27 @@ export interface SimulationResult {
 	investmentId: string;
 	period: Period;
 	daysInPeriod: number;
-	initialAmount: number;
+	initialAmount: number; // Capital initial uniquement
 	leveragedAmount: number;
-	grossGain: number;
+	grossGain: number; // Gain brut total (capital initial + capital additionnel)
+	// Gains séparés pour calcul de rentabilité précise
+	initialCapitalGain: number; // Gain brut sur le capital initial uniquement
+	additionalCapitalGain?: number; // Gain brut sur le capital additionnel (si applicable)
+	additionalCapitalAmount?: number; // Montant de capital additionnel investi
 	fees: FeeBreakdown;
 	taxes: TaxBreakdown;
-	netGain: number;
-	netReturn: number;
+	netGain: number; // Gain net total (capital initial + capital additionnel)
+	initialCapitalNetGain: number; // Gain net sur le capital initial uniquement (pour calcul ROI)
+	netReturn: number; // Rentabilité nette calculée UNIQUEMENT sur le capital initial
 	newCapital: number;
 	reinvestment: number;
+	withdrawal?: number; // Montant retiré si sellStrategy = 'withdraw'
 	stopLoss: StopLossInfo;
+	takeProfit?: {
+		percentage: number;
+		amount: number;
+		potentialGain: number;
+	};
 	calculatedAt: Date;
 }
 

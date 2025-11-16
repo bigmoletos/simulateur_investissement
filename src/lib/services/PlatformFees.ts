@@ -78,15 +78,15 @@ export class PlatformFees {
 		// Frais de retrait: Gratuit pour virement SEPA et retrait bancaire
 		const withdrawalFee = 0;
 
-		logger.debug('Calcul frais XTB', { 
-			amount, 
-			assetType, 
-			leverage, 
+		logger.debug('Calcul frais XTB', {
+			amount,
+			assetType,
+			leverage,
 			monthlyVolume,
-			spread, 
-			commission, 
+			spread,
+			commission,
 			commissionRate,
-			swapRate 
+			swapRate
 		});
 
 		return {
@@ -135,14 +135,14 @@ export class PlatformFees {
 		const baseSwapRate = assetType === 'etf' ? 0.00012 : assetType === 'action' ? 0.00018 : 0.00025;
 		const swapRate = leverage > 1 ? baseSwapRate * (leverage - 1) : 0;
 
-		logger.debug('Calcul frais eToro', { 
-			amount, 
-			assetType, 
-			leverage, 
-			spread, 
-			commission, 
+		logger.debug('Calcul frais eToro', {
+			amount,
+			assetType,
+			leverage,
+			spread,
+			commission,
 			swapRate,
-			withdrawalFee 
+			withdrawalFee
 		});
 
 		return {

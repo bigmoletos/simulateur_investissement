@@ -25,10 +25,13 @@
 		} else {
 			inputValue = target.value;
 		}
+		// Déclencher l'événement change aussi lors de l'input pour mise à jour en temps réel
+		dispatch('change', inputValue);
 	}
 
 	function handleBlur() {
 		isEditing = false;
+		// Déclencher aussi au blur pour s'assurer que la valeur finale est bien prise en compte
 		dispatch('change', inputValue);
 	}
 
@@ -87,11 +90,11 @@
 <style>
 	.excel-cell {
 		display: grid;
-		grid-template-columns: 200px 1fr;
-		gap: 0.75rem;
+		grid-template-columns: 180px 1fr;
+		gap: 0.35rem;
 		align-items: center;
-		padding: 0.5rem 0;
-		border-bottom: 1px solid #e0e0e0;
+		padding: 0.3rem 0;
+		border-bottom: 1px solid var(--border-color, #e0e0e0);
 	}
 
 	.excel-cell.has-error {
@@ -100,37 +103,58 @@
 
 	.excel-cell-label {
 		font-weight: 600;
-		color: #555;
-		font-size: 0.9rem;
+		color: var(--text-primary, #555);
+		font-size: 0.75rem;
+	}
+
+	:global(:root.dark) .excel-cell {
+		border-bottom-color: var(--border-color);
+	}
+
+	:global(:root.dark) .excel-cell-label {
+		color: var(--text-primary);
 	}
 
 	.excel-cell-input {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: 0.15rem;
 	}
 
 	input,
 	select {
-		padding: 0.5rem;
-		border: 1px solid #ddd;
+		padding: 0.35rem;
+		border: 1px solid var(--border-color, #ddd);
 		border-radius: 4px;
-		font-size: 1rem;
+		font-size: 0.85rem;
 		width: 100%;
-		max-width: 300px;
+		max-width: 250px;
 		transition: border-color 0.2s, box-shadow 0.2s;
+		background: var(--bg-primary, white);
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) input,
+	:global(:root.dark) select {
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		border-color: var(--border-color);
 	}
 
 	input:focus,
 	select:focus {
 		outline: none;
-		border-color: #667eea;
-		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		border-color: #d4af37;
+		box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
 	}
 
 	input.editing {
-		border-color: #667eea;
-		background-color: #f8f9ff;
+		border-color: #d4af37;
+		background-color: var(--bg-secondary, #f8f9ff);
+	}
+
+	:global(:root.dark) input.editing {
+		background-color: var(--bg-secondary);
 	}
 
 	input.error,
@@ -140,13 +164,20 @@
 
 	input:disabled,
 	select:disabled {
-		background-color: #f5f5f5;
+		background-color: var(--bg-secondary, #f5f5f5);
 		cursor: not-allowed;
+		color: var(--text-secondary, #999);
+	}
+
+	:global(:root.dark) input:disabled,
+	:global(:root.dark) select:disabled {
+		background-color: var(--bg-secondary);
+		color: var(--text-secondary);
 	}
 
 	.error-message {
-		font-size: 0.75rem;
+		font-size: 0.65rem;
 		color: #ef4444;
-		margin-top: 0.25rem;
+		margin-top: 0.15rem;
 	}
 </style>

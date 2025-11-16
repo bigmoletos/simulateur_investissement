@@ -198,6 +198,12 @@
 		// Attendre un peu pour s'assurer que le canvas est libéré
 		setTimeout(() => {
 			if (!ctx) return;
+
+			// Détecter le thème actuel
+			const isDark = document.documentElement.classList.contains('dark');
+			const textColor = isDark ? '#f5f5f5' : '#1a1a2e';
+			const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
 			chartInstance = new Chart(ctx, {
 				type: 'line',
 				data: {
@@ -205,24 +211,27 @@
 						{
 							label: `Rendement ${assetName}`,
 							data: dataWithDates,
-							borderColor: 'rgb(102, 126, 234)',
-							backgroundColor: 'rgba(102, 126, 234, 0.1)',
+							borderColor: '#3b82f6', // Bleu plus foncé et contrasté
+							backgroundColor: 'rgba(59, 130, 246, 0.15)',
 							tension: 0.4,
-							fill: true
+							fill: true,
+							borderWidth: 2
 						},
 						{
 							label: 'Moyenne mobile (7 périodes)',
 							data: movingAverageWithDates,
-							borderColor: 'rgb(239, 68, 68)',
+							borderColor: '#ef4444', // Rouge plus foncé
 							borderDash: [5, 5],
+							borderWidth: 2,
 							pointRadius: 0,
 							tension: 0.3
 						},
 						{
 							label: `Rentabilité moyenne (${avgReturn.toFixed(2)}%)`,
 							data: dates.map(date => ({ x: date, y: avgReturn })),
-							borderColor: 'rgb(16, 185, 129)',
+							borderColor: '#10b981', // Vert émeraude plus foncé
 							borderDash: [3, 3],
+							borderWidth: 2,
 							pointRadius: 0,
 							tension: 0
 						}
@@ -233,13 +242,37 @@
 					maintainAspectRatio: false,
 					plugins: {
 						legend: {
-							position: 'top'
+							position: 'top',
+							labels: {
+								color: textColor,
+								font: {
+									size: 12,
+									weight: '600'
+								},
+								padding: 12,
+								usePointStyle: true
+							}
 						},
 						title: {
 							display: true,
-							text: `Rendement historique - ${assetName} (${selectedPeriod})`
+							text: `Rendement historique - ${assetName} (${selectedPeriod})`,
+							color: textColor,
+							font: {
+								size: 16,
+								weight: '700'
+							},
+							padding: {
+								top: 10,
+								bottom: 20
+							}
 						},
 						tooltip: {
+							backgroundColor: isDark ? 'rgba(26, 26, 46, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+							titleColor: textColor,
+							bodyColor: textColor,
+							borderColor: '#d4af37',
+							borderWidth: 1,
+							padding: 12,
 							callbacks: {
 								label: function (context) {
 									return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`;
@@ -258,20 +291,48 @@
 									month: 'MMM yyyy'
 								}
 							},
+							ticks: {
+								color: textColor,
+								font: {
+									size: 11,
+									weight: '500'
+								}
+							},
+							grid: {
+								color: gridColor
+							},
 							title: {
 								display: true,
-								text: 'Date'
+								text: 'Date',
+								color: textColor,
+								font: {
+									size: 12,
+									weight: '600'
+								}
 							}
 						},
 						y: {
 							beginAtZero: false,
-							title: {
-								display: true,
-								text: 'Rendement (%)'
-							},
 							ticks: {
+								color: textColor,
+								font: {
+									size: 11,
+									weight: '500'
+								},
 								callback: function (value) {
 									return `${Number(value).toFixed(1)}%`;
+								}
+							},
+							grid: {
+								color: gridColor
+							},
+							title: {
+								display: true,
+								text: 'Rendement (%)',
+								color: textColor,
+								font: {
+									size: 12,
+									weight: '600'
 								}
 							}
 						}
@@ -380,78 +441,79 @@
 <style>
 	.historical-chart-section {
 		background: white;
-		border-radius: 8px;
-		padding: 1.5rem;
-		margin-top: 2rem;
+		border-radius: 6px;
+		padding: 0.75rem;
+		margin-top: 0.5rem;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
 	.chart-controls {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.5rem;
 	}
 
 	.chart-controls label {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.25rem;
 		font-weight: 600;
 		color: #555;
+		font-size: 0.7rem;
 	}
 
 	.chart-controls select {
-		padding: 0.5rem 1rem;
-		border: 2px solid #e0e0e0;
-		border-radius: 6px;
-		font-size: 0.9rem;
+		padding: 0.25rem 0.5rem;
+		border: 1px solid #e0e0e0;
+		border-radius: 4px;
+		font-size: 0.7rem;
 		cursor: pointer;
 		transition: border-color 0.2s;
 	}
 
 	.chart-controls select:hover {
-		border-color: #667eea;
+		border-color: #d4af37;
 	}
 
 	.chart-container {
 		position: relative;
-		height: 400px;
+		height: 250px;
 		width: 100%;
-		margin-top: 1rem;
+		margin-top: 0.5rem;
 	}
 
 	.chart-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		margin-bottom: 1rem;
+		margin-bottom: 0.5rem;
 		flex-wrap: wrap;
-		gap: 1rem;
+		gap: 0.5rem;
 	}
 
 	.header-left {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.25rem;
 	}
 
 	.chart-header h3 {
 		margin: 0;
 		color: #333;
-		font-size: 1.25rem;
+		font-size: 0.95rem;
 	}
 
 	.official-link {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 1rem;
+		gap: 0.25rem;
+		padding: 0.25rem 0.5rem;
 		background: #eff6ff;
 		border: 1px solid #3b82f6;
-		border-radius: 6px;
+		border-radius: 4px;
 		color: #1e40af;
 		text-decoration: none;
-		font-size: 0.85rem;
+		font-size: 0.7rem;
 		font-weight: 600;
 		transition: all 0.2s;
 		width: fit-content;
@@ -467,28 +529,28 @@
 
 	.chart-stats {
 		display: flex;
-		gap: 1.5rem;
+		gap: 0.5rem;
 		align-items: center;
 	}
 
 	.stat-item {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 1rem;
+		gap: 0.25rem;
+		padding: 0.25rem 0.5rem;
 		background: #f9fafb;
-		border-radius: 6px;
+		border-radius: 4px;
 		border: 1px solid #e5e7eb;
 	}
 
 	.stat-label {
-		font-size: 0.9rem;
+		font-size: 0.7rem;
 		color: #6b7280;
 		font-weight: 500;
 	}
 
 	.stat-value {
-		font-size: 1rem;
+		font-size: 0.8rem;
 		font-weight: 700;
 	}
 

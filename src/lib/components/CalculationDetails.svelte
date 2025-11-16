@@ -7,7 +7,7 @@
 
 	export let investment: Investment;
 	export let results: Record<Period, SimulationResult>;
-	export let annualIncome: number = 30000;
+	export let annualIncome: number = 15000;
 
 	let expandedPeriod: Period | null = null;
 
@@ -79,10 +79,14 @@
 			swapFees = leveragedAmount * dailySwapRate * daysInPeriod;
 		}
 
-		// Calcul des frais de sortie si on vend pour réinvestir
-		const shouldSellAndReinvest = SimulationEngine.shouldReinvest(investment, period);
+		// Calcul des frais de sortie si on vend pour réinvestir/stabiliser
+		const shouldSellForStabilization = SimulationEngine.shouldSellForStabilization(investment, period);
+		const sellStrategy = investment.sellStrategy || 'reinvest';
 		let exitFees = 0;
-		if (shouldSellAndReinvest) {
+		let reentryFees = 0;
+		let withdrawalFees = 0;
+
+		if (shouldSellForStabilization) {
 			const sellAmount = investment.amount + grossGain;
 			const exitFeeBreakdown = PlatformFees.calculate(
 				investment.platform,
@@ -92,9 +96,41 @@
 				0
 			);
 			exitFees = exitFeeBreakdown.spread || exitFeeBreakdown.entry;
+
+			// Frais de réentrée si stratégie = réinvestir
+			if (sellStrategy === 'reinvest') {
+				// Capital disponible après vente = capital initial + gain brut - frais d'entrée initiaux - frais de swap - frais de sortie
+				const newCapitalAfterSale = investment.amount + grossGain - entryFees.total - swapFees - exitFees;
+				const reentryFeeBreakdown = PlatformFees.calculate(
+					investment.platform,
+					newCapitalAfterSale,
+					investment.assetType,
+					investment.leverage,
+					0
+				);
+				reentryFees = reentryFeeBreakdown.entry;
+			}
+
+			// Frais de retrait si stratégie = retirer
+			if (sellStrategy === 'withdraw') {
+				// Estimation préliminaire des frais de retrait
+				const estimatedGainAfterFees = grossGain - entryFees.total - exitFees - swapFees;
+				const estimatedTaxes = TaxCalculator.calculate(estimatedGainAfterFees, annualIncome);
+				const estimatedWithdrawalAmount = estimatedGainAfterFees - estimatedTaxes.total;
+				if (estimatedWithdrawalAmount > 0) {
+					const withdrawalFeeBreakdown = PlatformFees.calculate(
+						investment.platform,
+						estimatedWithdrawalAmount,
+						investment.assetType,
+						investment.leverage,
+						0
+					);
+					withdrawalFees = withdrawalFeeBreakdown.withdrawalFee || 0;
+				}
+			}
 		}
 
-		const gainAfterFees = grossGain - entryFees.total - exitFees - swapFees;
+		const gainAfterFees = grossGain - entryFees.total - exitFees - reentryFees - swapFees - withdrawalFees;
 		const taxes = TaxCalculator.calculate(gainAfterFees, annualIncome);
 		const netGain = gainAfterFees - taxes.total;
 		const netReturn = (netGain / investment.amount) * 100;
@@ -107,19 +143,21 @@
 			grossGain,
 			entryFees,
 			exitFees,
+			reentryFees,
+			withdrawalFees,
 			swapFees,
 			gainAfterFees,
 			taxes,
 			netGain,
 			netReturn,
-			shouldSellAndReinvest
+			shouldSellAndReinvest: shouldSellForStabilization
 		};
 	}
 </script>
 
 <div class="calculation-details">
 	<h2>📊 Détail des Calculs</h2>
-	<p class="subtitle">Cliquez sur une période pour voir le détail des calculs étape par étape</p>
+	<p class="subtitle">Cliquez sur une période pour voir le détail des calculs étape par étape (fermé par défaut)</p>
 
 	<div class="periods-list">
 		{#each ['daily', 'weekly', 'monthly', 'yearly'] as period}
@@ -135,7 +173,10 @@
 							{periodData.periodKey === 'daily' ? 'Quotidien' : periodData.periodKey === 'weekly' ? 'Hebdomadaire' : periodData.periodKey === 'monthly' ? 'Mensuel' : 'Annuel'}
 						</span>
 						<span class="period-summary">
-							Gain net: {formatCurrency(periodData.result.netGain)} ({formatPercentage(periodData.result.netReturn)})
+							Gain net: {formatCurrency(periodData.result.initialCapitalNetGain ?? periodData.result.netGain)} ({formatPercentage(periodData.result.netReturn)})
+							{#if periodData.result.additionalCapitalAmount && periodData.result.additionalCapitalAmount > 0}
+								<br><small class="calc-note">+ {formatCurrency(periodData.result.additionalCapitalAmount)} capital additionnel</small>
+							{/if}
 						</span>
 						<span class="expand-icon">{expandedPeriod === periodData.periodKey ? '▼' : '▶'}</span>
 					</button>
@@ -208,7 +249,7 @@
 										<td>Gain brut</td>
 										<td class="value formula positive">
 											{formatCurrency(investment.amount)} × {formatPercentage(periodData.breakdown.periodReturn * 100)} × {formatNumber(investment.leverage, 1)} = {formatCurrency(periodData.breakdown.grossGain)}
-											<br><small style="color: #666;">(Le levier multiplie uniquement le gain, pas le montant investi)</small>
+											<br><small class="calc-note">(Le levier multiplie uniquement le gain, pas le montant investi)</small>
 										</td>
 									</tr>
 								</table>
@@ -255,7 +296,7 @@
 							<!-- Étape 5: Frais de sortie (si réinvestissement) -->
 							{#if periodData.breakdown.shouldSellAndReinvest}
 								<div class="calculation-step">
-									<h3>5️⃣ Frais de sortie (vente pour réinvestissement)</h3>
+									<h3>5️⃣ Frais de sortie (vente pour réinvestissement/retrait)</h3>
 									<table class="calc-table">
 										<tr>
 											<td colspan="2" class="info-note">
@@ -272,9 +313,30 @@
 												{formatCurrency(investment.amount + periodData.breakdown.grossGain)} × {formatPercentage((periodData.breakdown.entryFees.spreadRate || 0) * 100)} = {formatCurrency(periodData.breakdown.exitFees || 0)}
 											</td>
 										</tr>
+										{#if periodData.breakdown.reentryFees}
+											<tr>
+												<td>Frais de réentrée (rachat)</td>
+												<td class="value formula negative">
+													{formatCurrency(investment.amount + periodData.breakdown.grossGain - periodData.breakdown.entryFees.total - periodData.breakdown.swapFees - (periodData.breakdown.exitFees || 0))} × {formatPercentage((periodData.breakdown.entryFees.spreadRate || 0) * 100)} = {formatCurrency(periodData.breakdown.reentryFees)}
+												</td>
+											</tr>
+										{/if}
+										{#if periodData.breakdown.withdrawalFees}
+											<tr>
+												<td>Frais de retrait</td>
+												<td class="value formula negative">
+													{formatCurrency(periodData.breakdown.withdrawalFees)}
+													{#if investment.platform === 'etoro'}
+														<small> (5$ par retrait sur eToro)</small>
+													{:else}
+														<small> (Gratuit sur XTB)</small>
+													{/if}
+												</td>
+											</tr>
+										{/if}
 										<tr>
 											<td colspan="2" class="info-note">
-												<small>💡 Après la vente, vous rachetez immédiatement avec le nouveau capital. Les frais d'entrée du rachat sont inclus dans les frais d'entrée totaux.</small>
+												<small>💡 {periodData.breakdown.reentryFees ? 'Après la vente, vous rachetez immédiatement avec le nouveau capital. Les frais de réentrée sont déduits du capital disponible.' : 'Après la vente, vous retirez les gains. Les frais de retrait sont déduits du montant retiré.'}</small>
 											</td>
 										</tr>
 									</table>
@@ -331,6 +393,18 @@
 											<td class="value negative">-{formatCurrency(periodData.breakdown.exitFees)}</td>
 										</tr>
 									{/if}
+									{#if periodData.breakdown.shouldSellAndReinvest && periodData.breakdown.reentryFees}
+										<tr>
+											<td>Frais de réentrée (rachat)</td>
+											<td class="value negative">-{formatCurrency(periodData.breakdown.reentryFees)}</td>
+										</tr>
+									{/if}
+									{#if periodData.breakdown.shouldSellAndReinvest && periodData.breakdown.withdrawalFees}
+										<tr>
+											<td>Frais de retrait</td>
+											<td class="value negative">-{formatCurrency(periodData.breakdown.withdrawalFees)}</td>
+										</tr>
+									{/if}
 									{#if investment.leverage > 1}
 										<tr>
 											<td>Frais de swap</td>
@@ -340,7 +414,7 @@
 									<tr>
 										<td>Gain après frais</td>
 										<td class="value formula {periodData.breakdown.gainAfterFees >= 0 ? 'positive' : 'negative'}">
-											{formatCurrency(periodData.breakdown.grossGain)} - {formatCurrency(periodData.breakdown.entryFees.total + (periodData.breakdown.exitFees || 0) + periodData.breakdown.swapFees)} = {formatCurrency(periodData.breakdown.gainAfterFees)}
+											{formatCurrency(periodData.breakdown.grossGain)} - {formatCurrency(periodData.breakdown.entryFees.total + (periodData.breakdown.exitFees || 0) + (periodData.breakdown.reentryFees || 0) + (periodData.breakdown.withdrawalFees || 0) + periodData.breakdown.swapFees)} = {formatCurrency(periodData.breakdown.gainAfterFees)}
 										</td>
 									</tr>
 								</table>
@@ -452,23 +526,35 @@
 										<td class="value">{formatCurrency(investment.amount)}</td>
 									</tr>
 									<tr>
-										<td>Gain net</td>
-										<td class="value {periodData.result.netGain >= 0 ? 'positive' : 'negative'}">
-											{periodData.result.netGain >= 0 ? '+' : ''}{formatCurrency(periodData.result.netGain)}
+										<td>Gain net (capital initial uniquement)</td>
+										<td class="value {(periodData.result.initialCapitalNetGain ?? periodData.result.netGain) >= 0 ? 'positive' : 'negative'}">
+											{(periodData.result.initialCapitalNetGain ?? periodData.result.netGain) >= 0 ? '+' : ''}{formatCurrency(periodData.result.initialCapitalNetGain ?? periodData.result.netGain)}
 										</td>
 									</tr>
-									{#if investment.monthlyCapitalAddition && (periodData.periodKey === 'monthly' || periodData.periodKey === 'yearly')}
+									{#if periodData.result.additionalCapitalAmount && periodData.result.additionalCapitalAmount > 0}
 										<tr>
-											<td>Capital mensuel supplémentaire</td>
+											<td>Capital additionnel investi</td>
 											<td class="value positive">
-												+{formatCurrency(investment.monthlyCapitalAddition * (periodData.periodKey === 'yearly' ? 12 : 1))}
+												+{formatCurrency(periodData.result.additionalCapitalAmount)}
+											</td>
+										</tr>
+										<tr>
+											<td>Gain net (capital additionnel)</td>
+											<td class="value {periodData.result.additionalCapitalGain && periodData.result.additionalCapitalGain >= 0 ? 'positive' : 'negative'}">
+												{periodData.result.additionalCapitalGain && periodData.result.additionalCapitalGain >= 0 ? '+' : ''}{formatCurrency(periodData.result.additionalCapitalGain ?? 0)}
 											</td>
 										</tr>
 									{/if}
 									<tr>
+										<td>Gain net total</td>
+										<td class="value {periodData.result.netGain >= 0 ? 'positive' : 'negative'}">
+											{periodData.result.netGain >= 0 ? '+' : ''}{formatCurrency(periodData.result.netGain)}
+										</td>
+									</tr>
+									<tr>
 										<td>Nouveau capital</td>
 										<td class="value formula large positive">
-											{formatCurrency(investment.amount)} + {formatCurrency(periodData.result.netGain)} + {formatCurrency((investment.monthlyCapitalAddition || 0) * (periodData.periodKey === 'yearly' ? 12 : periodData.periodKey === 'monthly' ? 1 : 0))} = {formatCurrency(periodData.result.newCapital)}
+											{formatCurrency(investment.amount)} + {formatCurrency(periodData.result.initialCapitalNetGain ?? periodData.result.netGain)} + {formatCurrency(periodData.result.additionalCapitalAmount ?? 0)} = {formatCurrency(periodData.result.newCapital)}
 										</td>
 									</tr>
 								</table>
@@ -493,16 +579,24 @@
 
 	h2 {
 		margin: 0 0 0.5rem 0;
-		color: #333;
+		color: var(--text-primary, #333);
 		font-size: 1.5rem;
-		border-bottom: 2px solid #667eea;
+		border-bottom: 2px solid #d4af37;
 		padding-bottom: 0.5rem;
+	}
+
+	:global(:root.dark) h2 {
+		color: var(--text-primary);
 	}
 
 	.subtitle {
 		margin: 0.5rem 0 1.5rem 0;
-		color: #666;
+		color: var(--text-secondary, #666);
 		font-size: 0.9rem;
+	}
+
+	:global(:root.dark) .subtitle {
+		color: var(--text-secondary);
 	}
 
 	.periods-list {
@@ -512,10 +606,16 @@
 	}
 
 	.period-card {
-		border: 1px solid #e0e0e0;
+		border: 1px solid var(--border-color, #e0e0e0);
 		border-radius: 8px;
 		overflow: hidden;
 		transition: box-shadow 0.2s;
+		background: var(--bg-primary, white);
+	}
+
+	:global(:root.dark) .period-card {
+		border-color: var(--border-color);
+		background: var(--bg-primary);
 	}
 
 	.period-card:hover {
@@ -528,20 +628,30 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 1rem 1.5rem;
-		background: #f8f9fa;
+		background: var(--bg-secondary, #f8f9fa);
 		border: none;
 		cursor: pointer;
 		text-align: left;
 		font-size: 1rem;
 		transition: background 0.2s;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .period-header {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
 	}
 
 	.period-header:hover {
-		background: #e9ecef;
+		background: var(--bg-secondary, #e9ecef);
+	}
+
+	:global(:root.dark) .period-header:hover {
+		background: var(--bg-secondary);
 	}
 
 	.period-header.expanded {
-		background: #667eea;
+		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 		color: white;
 	}
 
@@ -563,7 +673,11 @@
 
 	.calculation-breakdown {
 		padding: 1.5rem;
-		background: white;
+		background: var(--bg-primary, white);
+	}
+
+	:global(:root.dark) .calculation-breakdown {
+		background: var(--bg-primary);
 	}
 
 	.calculation-step {
@@ -580,8 +694,12 @@
 
 	.calculation-step h3 {
 		margin: 0 0 1rem 0;
-		color: #333;
+		color: var(--text-primary, #333);
 		font-size: 1.1rem;
+	}
+
+	:global(:root.dark) .calculation-step h3 {
+		color: var(--text-primary);
 	}
 
 	.calc-table {
@@ -591,25 +709,43 @@
 
 	.calc-table td {
 		padding: 0.75rem;
-		border-bottom: 1px solid #f0f0f0;
+		border-bottom: 1px solid var(--border-color, #f0f0f0);
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .calc-table td {
+		border-bottom-color: var(--border-color);
+		color: var(--text-primary);
 	}
 
 	.calc-table td:first-child {
 		font-weight: 600;
-		color: #555;
+		color: var(--text-primary, #555);
 		width: 40%;
+	}
+
+	:global(:root.dark) .calc-table td:first-child {
+		color: var(--text-primary);
 	}
 
 	.calc-table td.value {
 		text-align: right;
 		font-family: 'Courier New', monospace;
-		color: #333;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .calc-table td.value {
+		color: var(--text-primary);
 	}
 
 	.calc-table td.formula {
 		font-size: 0.9rem;
-		color: #666;
+		color: var(--text-secondary, #666);
 		font-style: italic;
+	}
+
+	:global(:root.dark) .calc-table td.formula {
+		color: var(--text-secondary);
 	}
 
 	.calc-table td.positive {
@@ -625,6 +761,15 @@
 	.calc-table td.large {
 		font-size: 1.1rem;
 		font-weight: 700;
+	}
+
+	.calc-note {
+		color: var(--text-secondary, #666);
+		font-size: 0.85rem;
+	}
+
+	:global(:root.dark) .calc-note {
+		color: var(--text-secondary);
 	}
 </style>
 

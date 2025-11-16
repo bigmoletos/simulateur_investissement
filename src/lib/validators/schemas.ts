@@ -32,11 +32,30 @@ export const InvestmentSchema: z.ZodType<Investment> = z.object({
 	}),
 	leverage: z.number().min(1, 'Le levier doit être au minimum 1').max(10, 'Le levier doit être au maximum 10'),
 	stopLoss: z.number().min(5, 'Le stop loss doit être au minimum 5%').max(50, 'Le stop loss doit être au maximum 50%'),
+	takeProfit: z.number().min(0, 'Le take profit doit être positif').max(1000, 'Le take profit peut aller jusqu\'à 1000%').optional(),
 	expectedReturn: z.number().min(-100, 'Le rendement ne peut pas être inférieur à -100%').max(1000, 'Le rendement peut aller jusqu\'à 1000%'),
-	reinvestFrequency: z.enum(['daily', 'weekly', 'monthly', 'yearly'], {
+	reinvestFrequency: z.union([
+		z.enum(['daily', 'weekly', 'monthly', 'yearly']),
+		z.array(z.enum(['daily', 'weekly', 'monthly', 'yearly'])).min(0), // Tableau peut être vide
+		z.literal('none')
+	], {
 		errorMap: () => ({ message: 'Fréquence de réinvestissement invalide' })
 	}),
-	monthlyCapitalAddition: z.number().min(0, 'Le capital mensuel doit être positif').optional(),
+	sellFrequency: z.union([
+		z.enum(['daily', 'weekly', 'monthly', 'yearly']),
+		z.array(z.enum(['daily', 'weekly', 'monthly', 'yearly'])).min(0), // Tableau peut être vide
+		z.literal('none')
+	], {
+		errorMap: () => ({ message: 'Fréquence de sortie/réachat invalide' })
+	}).optional(),
+	sellStrategy: z.enum(['reinvest', 'withdraw'], {
+		errorMap: () => ({ message: 'Stratégie de vente invalide' })
+	}).optional(),
+	capitalAdditionAmount: z.number().min(0, 'Le montant d\'ajout de capital doit être positif').optional(),
+	capitalAdditionFrequency: z.enum(['daily', 'weekly', 'monthly', 'yearly'], {
+		errorMap: () => ({ message: 'Fréquence d\'ajout de capital invalide' })
+	}).optional(),
+	monthlyCapitalAddition: z.number().min(0, 'Le capital mensuel doit être positif').optional(), // Rétrocompatibilité
 	createdAt: z.date(),
 	updatedAt: z.date(),
 	name: z.string().optional()

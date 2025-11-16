@@ -5,7 +5,7 @@
 
 	export let investment: Investment;
 
-	$: annualIncome = $settings?.annualIncome || 30000;
+	$: annualIncome = $settings?.annualIncome || 15000;
 
 	$: optimizationResult = SimulationEngine.optimize(
 		{
@@ -149,10 +149,16 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
-		background: white;
+		background: var(--bg-primary, white);
 		border-radius: 8px;
 		padding: 1.5rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 2px 8px var(--shadow, rgba(0, 0, 0, 0.1));
+		color: var(--text-primary, #111827);
+	}
+
+	:global(:root.dark) .optimization-panel {
+		background: var(--bg-primary);
+		color: var(--text-primary);
 	}
 
 	.panel-header {
@@ -166,7 +172,11 @@
 	.panel-header h3 {
 		margin: 0;
 		font-size: 1.5rem;
-		color: #111827;
+		color: var(--text-primary, #111827);
+	}
+
+	:global(:root.dark) .panel-header h3 {
+		color: var(--text-primary);
 	}
 
 	.improvement-badge {
@@ -177,13 +187,23 @@
 	}
 
 	.improvement-badge.positive {
-		background: #d1fae5;
-		color: #065f46;
+		background: var(--bg-secondary, #d1fae5);
+		color: var(--text-primary, #065f46);
+	}
+
+	:global(:root.dark) .improvement-badge.positive {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
 	}
 
 	.improvement-badge.negative {
-		background: #fee2e2;
-		color: #991b1b;
+		background: var(--bg-secondary, #fee2e2);
+		color: var(--text-primary, #991b1b);
+	}
+
+	:global(:root.dark) .improvement-badge.negative {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
 	}
 
 	.recommendations-grid {
@@ -196,11 +216,18 @@
 		display: flex;
 		flex-direction: column;
 		padding: 1.25rem;
-		background: #f8f9ff;
-		border: 1px solid #e5e7eb;
-		border-left: 4px solid #667eea;
+		background: var(--bg-secondary, #f8f9ff);
+		border: 1px solid var(--border-color, #e5e7eb);
+		border-left: 4px solid #d4af37;
 		border-radius: 6px;
 		transition: box-shadow 0.2s;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .recommendation-card {
+		background: var(--bg-secondary);
+		border-color: var(--border-color);
+		color: var(--text-primary);
 	}
 
 	.recommendation-card:hover {
@@ -227,47 +254,72 @@
 
 	.rec-label {
 		font-size: 0.85rem;
-		color: #6b7280;
+		color: var(--text-secondary, #6b7280);
 		margin-bottom: 0.25rem;
 		font-weight: 500;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 	}
 
+	:global(:root.dark) .rec-label {
+		color: var(--text-secondary);
+	}
+
 	.rec-value {
 		font-size: 1.5rem;
 		font-weight: 700;
-		color: #667eea;
+		color: #d4af37;
 	}
 
 	.rec-justification {
 		font-size: 0.9rem;
-		color: #374151;
+		color: var(--text-primary, #374151);
 		line-height: 1.6;
 		padding-top: 0.75rem;
-		border-top: 1px solid #e5e7eb;
+		border-top: 1px solid var(--border-color, #e5e7eb);
+	}
+
+	:global(:root.dark) .rec-justification {
+		color: var(--text-primary);
+		border-top-color: var(--border-color);
 	}
 
 	.risk-warning {
 		padding: 1rem;
-		background: #fef3c7;
+		background: var(--bg-secondary, #fef3c7);
 		border-left: 4px solid #f59e0b;
 		border-radius: 6px;
-		color: #92400e;
+		color: var(--text-primary, #92400e);
 		font-size: 0.9rem;
+	}
+
+	:global(:root.dark) .risk-warning {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
 	}
 
 	.comparison-box {
 		padding: 1.25rem;
-		background: #f9fafb;
-		border: 1px solid #e5e7eb;
+		background: var(--bg-secondary, #f9fafb);
+		border: 1px solid var(--border-color, #e5e7eb);
 		border-radius: 6px;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .comparison-box {
+		background: var(--bg-secondary);
+		border-color: var(--border-color);
+		color: var(--text-primary);
 	}
 
 	.comparison-box h4 {
 		margin: 0 0 1rem 0;
 		font-size: 1.1rem;
-		color: #111827;
+		color: var(--text-primary, #111827);
+	}
+
+	:global(:root.dark) .comparison-box h4 {
+		color: var(--text-primary);
 	}
 
 	.comparison-grid {
@@ -280,29 +332,47 @@
 		display: flex;
 		flex-direction: column;
 		padding: 0.75rem;
-		background: white;
+		background: var(--bg-primary, white);
 		border-radius: 4px;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .comparison-item {
+		background: var(--bg-primary);
+		color: var(--text-primary);
 	}
 
 	.comparison-item.highlight {
-		background: #eff6ff;
+		background: var(--bg-secondary, #eff6ff);
 		border: 2px solid #3b82f6;
+	}
+
+	:global(:root.dark) .comparison-item.highlight {
+		background: var(--bg-secondary);
 	}
 
 	.comparison-label {
 		font-size: 0.85rem;
-		color: #6b7280;
+		color: var(--text-secondary, #6b7280);
 		margin-bottom: 0.5rem;
+	}
+
+	:global(:root.dark) .comparison-label {
+		color: var(--text-secondary);
 	}
 
 	.comparison-value {
 		font-size: 1.25rem;
 		font-weight: 700;
-		color: #111827;
+		color: var(--text-primary, #111827);
+	}
+
+	:global(:root.dark) .comparison-value {
+		color: var(--text-primary);
 	}
 
 	.comparison-value.optimized {
-		color: #667eea;
+		color: #d4af37;
 	}
 
 	.comparison-value.positive {
@@ -315,16 +385,26 @@
 
 	.info-box {
 		padding: 1rem;
-		background: #f0f9ff;
+		background: var(--bg-secondary, #f0f9ff);
 		border-left: 4px solid #0ea5e9;
 		border-radius: 6px;
-		color: #0c4a6e;
+		color: var(--text-primary, #0c4a6e);
 		font-size: 0.85rem;
 		line-height: 1.6;
 	}
 
+	:global(:root.dark) .info-box {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
 	.info-box p {
 		margin: 0;
+		color: var(--text-primary, #0c4a6e);
+	}
+
+	:global(:root.dark) .info-box p {
+		color: var(--text-primary);
 	}
 
 	.info-box p + p {

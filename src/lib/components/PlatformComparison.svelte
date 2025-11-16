@@ -67,7 +67,7 @@
 		}
 
 		try {
-			const annualIncome = 30000; // Revenu annuel par défaut pour calcul des impôts
+			const annualIncome = 15000; // Revenu annuel par défaut pour calcul des impôts
 			xtbResults = SimulationEngine.simulateAllPeriods(xtbInvestment, annualIncome);
 			etoroResults = SimulationEngine.simulateAllPeriods(etoroInvestment, annualIncome);
 		} catch (error) {
@@ -221,25 +221,39 @@
 
 <style>
 	.platform-comparison {
-		background: white;
+		background: var(--bg-primary, white);
 		border-radius: 8px;
 		padding: 1.5rem;
 		margin-top: 2rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 2px 8px var(--shadow, rgba(0, 0, 0, 0.1));
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .platform-comparison {
+		background: var(--bg-primary);
+		color: var(--text-primary);
 	}
 
 	.platform-comparison h3 {
 		margin: 0 0 1.5rem 0;
-		color: #333;
+		color: var(--text-primary, #333);
 		font-size: 1.5rem;
-		border-bottom: 2px solid #667eea;
+		border-bottom: 2px solid #d4af37;
 		padding-bottom: 0.5rem;
+	}
+
+	:global(:root.dark) .platform-comparison h3 {
+		color: var(--text-primary);
 	}
 
 	.platform-comparison h4 {
 		margin: 1.5rem 0 1rem 0;
-		color: #555;
+		color: var(--text-primary, #555);
 		font-size: 1.1rem;
+	}
+
+	:global(:root.dark) .platform-comparison h4 {
+		color: var(--text-primary);
 	}
 
 	.fees-grid,
@@ -252,9 +266,16 @@
 
 	.fee-card,
 	.comparison-card {
-		border: 2px solid #e0e0e0;
+		border: 2px solid var(--border-color, #e0e0e0);
 		border-radius: 8px;
 		overflow: hidden;
+		background: var(--bg-primary, white);
+	}
+
+	:global(:root.dark) .fee-card,
+	:global(:root.dark) .comparison-card {
+		border-color: var(--border-color);
+		background: var(--bg-primary);
 	}
 
 	.fee-header,
@@ -268,7 +289,9 @@
 
 	.fee-header.xtb,
 	.comparison-header.xtb {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+		background-image: 
+			radial-gradient(circle at 30% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 60%);
 	}
 
 	.fee-header.etoro,
@@ -279,6 +302,14 @@
 	.fee-details,
 	.comparison-metrics {
 		padding: 1rem;
+		background: var(--bg-primary, white);
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .fee-details,
+	:global(:root.dark) .comparison-metrics {
+		background: var(--bg-primary);
+		color: var(--text-primary);
 	}
 
 	.fee-item,
@@ -286,7 +317,14 @@
 		display: flex;
 		justify-content: space-between;
 		padding: 0.75rem 0;
-		border-bottom: 1px solid #f0f0f0;
+		border-bottom: 1px solid var(--border-color, #f0f0f0);
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .fee-item,
+	:global(:root.dark) .metric {
+		border-bottom-color: var(--border-color);
+		color: var(--text-primary);
 	}
 
 	.fee-item:last-child,
@@ -295,24 +333,41 @@
 	}
 
 	.fee-item.total {
-		background: #f8f9ff;
+		background: var(--bg-secondary, #f8f9ff);
 		margin: 0.5rem -1rem;
 		padding-left: 1rem;
 		padding-right: 1rem;
-		border-top: 2px solid #667eea;
+		border-top: 2px solid #d4af37;
 		font-weight: 600;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .fee-item.total {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
 	}
 
 	.fee-label,
 	.metric-label {
-		color: #666;
+		color: var(--text-secondary, #666);
 		font-size: 0.9rem;
+	}
+
+	:global(:root.dark) .fee-label,
+	:global(:root.dark) .metric-label {
+		color: var(--text-secondary);
 	}
 
 	.fee-value,
 	.metric-value {
 		font-weight: 600;
 		font-size: 1rem;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .fee-value,
+	:global(:root.dark) .metric-value {
+		color: var(--text-primary);
 	}
 
 	.metric-value.positive {
@@ -334,8 +389,8 @@
 	}
 
 	.winner-banner.xtb-winner {
-		background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-		border: 2px solid #667eea;
+		background: linear-gradient(135deg, rgba(26, 26, 46, 0.1) 0%, rgba(22, 33, 62, 0.1) 100%);
+		border: 2px solid #d4af37;
 	}
 
 	.winner-banner.etoro-winner {
@@ -345,12 +400,20 @@
 
 	.winner-banner strong {
 		font-size: 1.1rem;
-		color: #333;
+		color: var(--text-primary, #333);
+	}
+
+	:global(:root.dark) .winner-banner strong {
+		color: var(--text-primary);
 	}
 
 	.difference {
 		font-size: 0.9rem;
-		color: #666;
+		color: var(--text-secondary, #666);
+	}
+
+	:global(:root.dark) .difference {
+		color: var(--text-secondary);
 	}
 </style>
 

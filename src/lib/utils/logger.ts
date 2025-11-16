@@ -1,8 +1,8 @@
 /**
  * Infrastructure de logging structuré
- * 
+ *
  * Conformité Constitution: Logging structuré pour le débogage
- * 
+ *
  * @author Simulateur de Placement
  * @version 1.0.0
  * @date 2025-11-15
@@ -39,7 +39,7 @@ class Logger {
 		// Afficher dans la console selon le niveau
 		const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
 		const prefix = `[${level.toUpperCase()}] ${entry.timestamp.toISOString()}`;
-		
+
 		if (context) {
 			console[consoleMethod](prefix, message, context);
 		} else {

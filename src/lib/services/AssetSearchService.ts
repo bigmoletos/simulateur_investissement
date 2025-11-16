@@ -1,8 +1,8 @@
 /**
  * Service de recherche d'actifs (ETF, actions) avec autocomplétion
- * 
+ *
  * Utilise des APIs gratuites pour rechercher des actifs financiers
- * 
+ *
  * @author Simulateur de Placement
  * @version 1.0.0
  * @date 2025-11-15
@@ -26,7 +26,7 @@ export class AssetSearchService {
 	/**
 	 * Recherche des actifs correspondant à une requête
 	 * Utilise plusieurs sources gratuites pour maximiser les résultats
-	 * 
+	 *
 	 * @param query Terme de recherche (nom, ticker, ISIN)
 	 * @param limit Nombre maximum de résultats
 	 */
@@ -44,7 +44,7 @@ export class AssetSearchService {
 			// - justETF API (si disponible)
 			// - Yahoo Finance API
 			// - Alpha Vantage (gratuit avec clé API)
-			
+
 			const localResults = this.searchLocalDatabase(searchTerm, limit);
 			results.push(...localResults);
 

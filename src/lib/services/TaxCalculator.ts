@@ -1,15 +1,15 @@
 /**
  * Service de calcul des impôts selon la réglementation française
- * 
+ *
  * Sources réelles 2025:
  * - Prélèvement Forfaitaire Unique (PFU): 30% (12,8% IR + 17,2% prélèvements sociaux)
  *   C'est le régime par défaut pour les plus-values mobilières
  * - Option barème progressif: possible en cochant la case 2OP sur la déclaration
  *   Tranches 2025: 0%, 11%, 30%, 41%, 45%
- * 
+ *
  * Conformité Constitution: Principe I - Précision Financière
  * Formules documentées avec sources réglementaires
- * 
+ *
  * @author Simulateur de Placement
  * @version 2.0.0
  * @date 2025-11-15
@@ -36,16 +36,16 @@ export class TaxCalculator {
 
 	/**
 	 * Calcule les impôts sur les plus-values mobilières
-	 * 
+	 *
 	 * Par défaut, utilise le PFU (Prélèvement Forfaitaire Unique) de 30%
 	 * Si useProgressiveTax est true, utilise le barème progressif (option 2OP)
-	 * 
+	 *
 	 * @param gain Gain réalisé (plus-value)
 	 * @param annualIncome Revenu annuel (pour calcul barème progressif)
 	 * @param useProgressiveTax Si true, utilise le barème progressif au lieu du PFU
 	 */
 	static calculate(
-		gain: number, 
+		gain: number,
 		annualIncome: number = 0,
 		useProgressiveTax: boolean = false
 	): TaxBreakdown {
@@ -62,21 +62,21 @@ export class TaxCalculator {
 			// Option barème progressif (case 2OP)
 			// Les prélèvements sociaux sont toujours appliqués
 			const socialCharges = gain * this.SOCIAL_CHARGES_RATE;
-			
+
 			// Impôt sur le revenu selon le barème progressif avec détails des tranches
 			const incomeTaxResult = this.calculateIncomeTax(gain, annualIncome);
-			
+
 			const total = socialCharges + incomeTaxResult.tax;
-			
-			logger.debug('Calcul impôts (barème progressif)', { 
-				gain, 
-				annualIncome, 
-				socialCharges, 
-				incomeTax: incomeTaxResult.tax, 
+
+			logger.debug('Calcul impôts (barème progressif)', {
+				gain,
+				annualIncome,
+				socialCharges,
+				incomeTax: incomeTaxResult.tax,
 				total,
 				brackets: incomeTaxResult.brackets
 			});
-			
+
 			return {
 				socialCharges,
 				incomeTax: incomeTaxResult.tax,
@@ -90,14 +90,14 @@ export class TaxCalculator {
 			const total = gain * this.PFU_RATE;
 			const incomeTax = gain * this.PFU_INCOME_TAX_RATE;
 			const socialCharges = gain * this.SOCIAL_CHARGES_RATE;
-			
-			logger.debug('Calcul impôts (PFU)', { 
-				gain, 
-				total, 
-				incomeTax, 
-				socialCharges 
+
+			logger.debug('Calcul impôts (PFU)', {
+				gain,
+				total,
+				incomeTax,
+				socialCharges
 			});
-			
+
 			return {
 				socialCharges,
 				incomeTax,
@@ -110,13 +110,13 @@ export class TaxCalculator {
 	/**
 	 * Calcule l'impôt sur le revenu selon le barème progressif (option 2OP)
 	 * Retourne également les détails des tranches
-	 * 
+	 *
 	 * @param gain Gain réalisé (plus-value)
 	 * @param annualIncome Revenu annuel
 	 * @returns Impôt supplémentaire dû sur le gain et détails des tranches
 	 */
 	private static calculateIncomeTax(
-		gain: number, 
+		gain: number,
 		annualIncome: number
 	): { tax: number; brackets: import('../types/index.js').TaxBracketDetail[] } {
 		const totalIncome = annualIncome + gain;
@@ -129,7 +129,7 @@ export class TaxCalculator {
 				const taxableAmount = Math.min(totalIncome, bracket.max) - bracket.min;
 				const taxAmount = taxableAmount * bracket.rate;
 				tax += taxAmount;
-				
+
 				if (taxableAmount > 0) {
 					bracketDetails.push({
 						min: bracket.min,
@@ -154,7 +154,7 @@ export class TaxCalculator {
 		}
 
 		const finalTax = Math.max(0, tax - existingTax);
-		
+
 		return {
 			tax: finalTax,
 			brackets: bracketDetails

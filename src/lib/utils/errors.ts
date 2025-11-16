@@ -1,8 +1,8 @@
 /**
  * Infrastructure de gestion des erreurs
- * 
+ *
  * Conformité Constitution: Gestion des erreurs avec messages clairs
- * 
+ *
  * @author Simulateur de Placement
  * @version 1.0.0
  * @date 2025-11-15
