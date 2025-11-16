@@ -4,7 +4,8 @@ import path from 'path';
 
 export default defineConfig({
 	plugins: [sveltekit()],
-	base: process.env.NODE_ENV === 'production' ? '/simulateur_investissement/' : '/',
+	// Pas de base path nécessaire avec domaine personnalisé
+	base: '/',
 	resolve: {
 		alias: {
 			'@': path.resolve(__dirname, './src/lib')
